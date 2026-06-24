@@ -1,0 +1,22 @@
+{
+  "cli": { "version": ">= 5.9.0", "appVersionSource": "remote" },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "env": { "EXPO_PUBLIC_API_URL": "http://192.168.137.156:4000/api" }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "env": { "EXPO_PUBLIC_API_URL": "https://RAILWAY-DOMENINGIZ/api" }
+    },
+    "production": {
+      "autoIncrement": true,
+      "android": { "buildType": "app-bundle" },
+      "env": { "EXPO_PUBLIC_API_URL": "https://RAILWAY-DOMENINGIZ/api" }
+    }
+  },
+  "submit": { "production": {} }
+}
