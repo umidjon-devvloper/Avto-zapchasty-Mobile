@@ -5,13 +5,13 @@
     "version": "1.0.0",
     "scheme": "autoparts",
     "orientation": "portrait",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "icon": "./assets/icon.png",
     "ios": {
       "supportsTablet": true,
       "icon": "./assets/icon.png",
-      "bundleIdentifier": "uz.autoparts.app"
+      "bundleIdentifier": "com.umidjon.umidjon"
     },
     "android": {
       "package": "uz.autoparts.app",
@@ -53,10 +53,18 @@
         {
           "photosPermission": "Ilova rasm tanlash uchun galereyaga ruxsat so'raydi."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": false
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "204db17c-cd95-46b5-a16a-b668480776b0"
+      }
+    },
+    "owner": "gouzbekistan"
   }
 }

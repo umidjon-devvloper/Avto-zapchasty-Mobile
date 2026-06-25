@@ -1,5 +1,6 @@
-import { ActivityIndicator, Pressable, Text, StyleSheet, View, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, Text, StyleSheet, type ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useColors } from '../theme/useColors';
 import { theme, s, ms } from '../theme';
 
 type Variant = 'primary' | 'outline' | 'ghost';
@@ -14,12 +15,13 @@ export function Button({
   disabled?: boolean;
   style?: ViewStyle;
 }) {
+  const colors = useColors();
   const isDisabled = disabled || loading;
 
   const inner = loading ? (
-    <ActivityIndicator color={variant === 'primary' ? theme.colors.onPrimary : theme.colors.primary} />
+    <ActivityIndicator color={variant === 'primary' ? colors.onPrimary : colors.primary} />
   ) : (
-    <Text style={[styles.text, variant === 'primary' ? styles.textPrimary : styles.textOther]}>{title}</Text>
+    <Text style={[styles.text, variant === 'primary' ? styles.textPrimary : { color: colors.text }]}>{title}</Text>
   );
 
   if (variant === 'primary') {
@@ -47,7 +49,7 @@ export function Button({
       disabled={isDisabled}
       style={({ pressed }) => [
         styles.base,
-        variant === 'outline' && styles.outline,
+        variant === 'outline' && { borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
         variant === 'ghost' && styles.ghost,
         isDisabled && { opacity: 0.5 },
         pressed && { opacity: 0.85 },
@@ -63,9 +65,7 @@ const styles = StyleSheet.create({
   base: { height: s(52), borderRadius: theme.radius.lg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: theme.space.lg },
   fill: { width: '100%' },
   shadow: { borderRadius: theme.radius.lg, overflow: 'hidden', ...theme.shadow.brand },
-  outline: { borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.card },
   ghost: { backgroundColor: 'transparent' },
   text: { fontSize: ms(16), fontWeight: '700' },
-  textPrimary: { color: theme.colors.onPrimary },
-  textOther: { color: theme.colors.text },
+  textPrimary: { color: '#ffffff' },
 });

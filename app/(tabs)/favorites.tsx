@@ -1,13 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import {
-  View, Text, ScrollView, StyleSheet, Pressable, RefreshControl, StatusBar,
-} from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable, RefreshControl, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
+import { useColors } from '../../src/theme/useColors';
 import { theme, s, ms } from '../../src/theme';
 import { ListingCard } from '../../src/components/ListingCard';
 import { Loading } from '../../src/components/Loading';
@@ -21,6 +20,7 @@ function chunk<T>(arr: T[], n: number): T[][] {
 }
 
 export default function Favorites() {
+  const colors = useColors();
   const token = useAuth((s) => s.accessToken);
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['favorites'],
@@ -33,15 +33,10 @@ export default function Favorites() {
   const items = data ?? [];
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: colors.bg }]}>
       <StatusBar barStyle="light-content" backgroundColor={theme.colors.brand} />
 
-      <LinearGradient
-        colors={theme.gradients.brand}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.header}
-      >
+      <LinearGradient colors={theme.gradients.brand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
         <SafeAreaView edges={['top']}>
           <View style={styles.headerRow}>
             <View>
@@ -52,7 +47,7 @@ export default function Favorites() {
             </View>
             {items.length > 0 && (
               <View style={styles.heartWrap}>
-                <Ionicons name="heart" size={ms(22)} color={theme.colors.danger} />
+                <Ionicons name="heart" size={ms(22)} color={colors.danger} />
                 <Text style={styles.heartCount}>{items.length}</Text>
               </View>
             )}
@@ -65,19 +60,15 @@ export default function Favorites() {
       ) : items.length === 0 ? (
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
-          refreshControl={
-            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={theme.colors.brand} />
-          }
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.brand} />}
         >
-          <EmptyFavorites />
+          <EmptyFavorites colors={colors} />
         </ScrollView>
       ) : (
         <ScrollView
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={theme.colors.brand} />
-          }
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.brand} />}
         >
           {chunk<Listing>(items, 2).map((row, i) => (
             <View key={i} style={styles.row}>
@@ -91,29 +82,18 @@ export default function Favorites() {
   );
 }
 
-function EmptyFavorites() {
+function EmptyFavorites({ colors }: { colors: ReturnType<typeof useColors> }) {
   return (
     <View style={styles.empty}>
-      <LinearGradient
-        colors={[theme.colors.dangerSoft, '#ffe5e5']}
-        style={styles.emptyIconWrap}
-      >
-        <Ionicons name="heart-outline" size={ms(44)} color={theme.colors.danger} />
+      <LinearGradient colors={[colors.dangerSoft, colors.dangerSoft + 'cc']} style={styles.emptyIconWrap}>
+        <Ionicons name="heart-outline" size={ms(44)} color={colors.danger} />
       </LinearGradient>
-      <Text style={styles.emptyTitle}>Hali hech narsa yo'q</Text>
-      <Text style={styles.emptyText}>
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>Hali hech narsa yo'q</Text>
+      <Text style={[styles.emptyText, { color: colors.muted }]}>
         Yoqqan e'lonlarni yurakcha belgisi bilan saqlang — ular shu yerda paydo bo'ladi
       </Text>
-      <Pressable
-        style={({ pressed }) => [styles.browseBtn, pressed && { opacity: 0.88 }]}
-        onPress={() => router.push('/search')}
-      >
-        <LinearGradient
-          colors={theme.gradients.brand}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.browseFill}
-        >
+      <Pressable style={({ pressed }) => [styles.browseBtn, pressed && { opacity: 0.88 }]} onPress={() => router.push('/search')}>
+        <LinearGradient colors={theme.gradients.brand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.browseFill}>
           <Ionicons name="search" size={ms(17)} color="#fff" />
           <Text style={styles.browseText}>E'lonlarni ko'rish</Text>
         </LinearGradient>
@@ -123,72 +103,26 @@ function EmptyFavorites() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.colors.bg },
-
-  header: {
-    paddingHorizontal: s(16),
-    paddingBottom: s(20),
-    borderBottomLeftRadius: s(24),
-    borderBottomRightRadius: s(24),
-    ...theme.shadow.navy,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: s(6),
-  },
+  root: { flex: 1 },
+  header: { paddingHorizontal: s(16), paddingBottom: s(20), borderBottomLeftRadius: s(24), borderBottomRightRadius: s(24), ...theme.shadow.navy },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: s(6) },
   headerTitle: { fontSize: ms(24), fontWeight: '800', color: '#fff', letterSpacing: -0.3 },
   headerSub: { fontSize: ms(12), color: 'rgba(255,255,255,0.65)', marginTop: s(3), fontWeight: '500' },
   heartWrap: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-    borderRadius: theme.radius.lg,
-    paddingHorizontal: s(12),
-    paddingVertical: s(8),
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: s(6),
+    backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
+    borderRadius: theme.radius.lg, paddingHorizontal: s(12), paddingVertical: s(8),
+    flexDirection: 'row', alignItems: 'center', gap: s(6),
   },
   heartCount: { fontSize: ms(16), fontWeight: '800', color: '#fff' },
 
-  list: {
-    paddingHorizontal: theme.space.lg,
-    paddingTop: s(16),
-    paddingBottom: theme.space.xl,
-    gap: theme.space.md,
-  },
+  list: { paddingHorizontal: theme.space.lg, paddingTop: s(16), paddingBottom: theme.space.xl, gap: theme.space.md },
   row: { flexDirection: 'row', gap: theme.space.md },
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: s(40), gap: s(16) },
-  emptyIconWrap: {
-    width: s(96),
-    height: s(96),
-    borderRadius: s(32),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyTitle: { fontSize: ms(20), fontWeight: '800', color: theme.colors.text, letterSpacing: -0.3 },
-  emptyText: {
-    fontSize: ms(14),
-    color: theme.colors.muted,
-    textAlign: 'center',
-    lineHeight: ms(21),
-    maxWidth: s(280),
-  },
-  browseBtn: {
-    borderRadius: theme.radius.lg,
-    overflow: 'hidden',
-    marginTop: s(4),
-    ...theme.shadow.navy,
-  },
-  browseFill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: s(8),
-    paddingHorizontal: s(28),
-    height: s(52),
-  },
+  emptyIconWrap: { width: s(96), height: s(96), borderRadius: s(32), alignItems: 'center', justifyContent: 'center' },
+  emptyTitle: { fontSize: ms(20), fontWeight: '800', letterSpacing: -0.3 },
+  emptyText: { fontSize: ms(14), textAlign: 'center', lineHeight: ms(21), maxWidth: s(280) },
+  browseBtn: { borderRadius: theme.radius.lg, overflow: 'hidden', marginTop: s(4), ...theme.shadow.navy },
+  browseFill: { flexDirection: 'row', alignItems: 'center', gap: s(8), paddingHorizontal: s(28), height: s(52) },
   browseText: { color: '#fff', fontWeight: '800', fontSize: ms(15) },
 });

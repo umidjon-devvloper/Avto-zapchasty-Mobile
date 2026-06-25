@@ -1,15 +1,22 @@
 import { useState } from 'react';
 import { TextInput, View, Text, StyleSheet, type TextInputProps } from 'react-native';
+import { useColors } from '../theme/useColors';
 import { theme, s, ms } from '../theme';
 
 export function Input({ label, style, ...props }: TextInputProps & { label?: string }) {
   const [focused, setFocused] = useState(false);
+  const colors = useColors();
   return (
     <View>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
+      {label ? <Text style={[styles.label, { color: colors.muted }]}>{label}</Text> : null}
       <TextInput
-        placeholderTextColor={theme.colors.faint}
-        style={[styles.input, focused && styles.inputFocused, style]}
+        placeholderTextColor={colors.faint}
+        style={[
+          styles.input,
+          { borderColor: colors.border, color: colors.text, backgroundColor: colors.card },
+          focused && { borderColor: colors.primary },
+          style,
+        ]}
         onFocus={(e) => { setFocused(true); props.onFocus?.(e); }}
         onBlur={(e) => { setFocused(false); props.onBlur?.(e); }}
         {...props}
@@ -21,7 +28,6 @@ export function Input({ label, style, ...props }: TextInputProps & { label?: str
 const styles = StyleSheet.create({
   label: {
     fontSize: ms(12.5),
-    color: theme.colors.muted,
     marginBottom: 6,
     fontWeight: '700',
     letterSpacing: 0.1,
@@ -30,15 +36,8 @@ const styles = StyleSheet.create({
   input: {
     height: s(50),
     borderWidth: 1.5,
-    borderColor: theme.colors.border,
     borderRadius: theme.radius.lg,
     paddingHorizontal: theme.space.md,
     fontSize: ms(15.5),
-    color: theme.colors.text,
-    backgroundColor: theme.colors.card,
-  },
-  inputFocused: {
-    borderColor: theme.colors.primary,
-    backgroundColor: theme.colors.card,
   },
 });

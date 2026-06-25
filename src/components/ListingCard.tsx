@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useColors } from '../theme/useColors';
 import { theme, s, ms, CONDITION_LABELS } from '../theme';
 import { formatPrice, timeAgo } from '../lib/format';
 import { resolveImage } from '../lib/image';
@@ -17,59 +18,47 @@ export function ListingCard({ listing, variant = 'row' }: { listing: Listing; va
 
 function GridCard({ listing }: { listing: Listing }) {
   const photo = listing.photos?.[0];
+  const colors = useColors();
   return (
     <Pressable
       onPress={() => router.push(`/listing/${listing._id}`)}
-      style={({ pressed }) => [styles.gCard, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.gCard,
+        { backgroundColor: colors.card, borderColor: colors.border },
+        pressed && styles.pressed,
+      ]}
     >
-      <View style={styles.gImgWrap}>
+      <View style={[styles.gImgWrap, { backgroundColor: colors.surface }]}>
         {photo ? (
-          <Image
-            source={{ uri: resolveImage(photo) }}
-            style={styles.gImg}
-            contentFit="cover"
-            transition={180}
-          />
+          <Image source={{ uri: resolveImage(photo) }} style={styles.gImg} contentFit="cover" transition={180} />
         ) : (
           <View style={styles.gImgEmpty}>
-            <Ionicons name="image-outline" size={ms(28)} color={theme.colors.faint} />
+            <Ionicons name="image-outline" size={ms(28)} color={colors.faint} />
           </View>
         )}
-
-        {/* Bottom gradient overlay */}
-        <LinearGradient
-          colors={['transparent', 'rgba(9,16,40,0.55)']}
-          style={styles.gImgGrad}
-          pointerEvents="none"
-        />
-
-        {/* Condition tag */}
+        <LinearGradient colors={['transparent', 'rgba(9,16,40,0.55)']} style={styles.gImgGrad} pointerEvents="none" />
         <View style={styles.condTag}>
-          <Text style={styles.condTagText}>
-            {CONDITION_LABELS[listing.condition] || listing.condition}
-          </Text>
+          <Text style={styles.condTagText}>{CONDITION_LABELS[listing.condition] || listing.condition}</Text>
         </View>
-
-        {/* Delivery badge */}
         {listing.delivery && (
-          <View style={styles.deliveryTag}>
-            <Ionicons name="bicycle" size={ms(10)} color={theme.colors.success} />
+          <View style={[styles.deliveryTag, { backgroundColor: colors.successSoft, borderColor: colors.success + '40' }]}>
+            <Ionicons name="bicycle" size={ms(10)} color={colors.success} />
           </View>
         )}
       </View>
 
       <View style={styles.gInfo}>
-        <Text style={styles.gPrice}>
+        <Text style={[styles.gPrice, { color: colors.text }]}>
           {formatPrice(listing.price.amount, listing.price.currency)}
         </Text>
-        <Text numberOfLines={2} style={styles.gTitle}>{listing.title}</Text>
+        <Text numberOfLines={2} style={[styles.gTitle, { color: colors.inkSoft }]}>{listing.title}</Text>
         <View style={styles.gFoot}>
-          <Ionicons name="location-outline" size={ms(11)} color={theme.colors.faint} />
-          <Text numberOfLines={1} style={styles.gMeta}>
+          <Ionicons name="location-outline" size={ms(11)} color={colors.faint} />
+          <Text numberOfLines={1} style={[styles.gMeta, { color: colors.faint }]}>
             {listing.city || "O'zbekiston"}
           </Text>
-          <View style={styles.dot} />
-          <Text style={styles.gMeta}>{timeAgo(listing.createdAt)}</Text>
+          <View style={[styles.dot, { backgroundColor: colors.faint }]} />
+          <Text style={[styles.gMeta, { color: colors.faint }]}>{timeAgo(listing.createdAt)}</Text>
         </View>
       </View>
     </Pressable>
@@ -78,54 +67,52 @@ function GridCard({ listing }: { listing: Listing }) {
 
 function RowCard({ listing }: { listing: Listing }) {
   const photo = listing.photos?.[0];
+  const colors = useColors();
   return (
     <Pressable
       onPress={() => router.push(`/listing/${listing._id}`)}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.card,
+        { backgroundColor: colors.card, borderColor: colors.border },
+        pressed && styles.pressed,
+      ]}
     >
-      <View style={styles.imgWrap}>
+      <View style={[styles.imgWrap, { backgroundColor: colors.surface }]}>
         {photo ? (
-          <Image
-            source={{ uri: resolveImage(photo) }}
-            style={styles.img}
-            contentFit="cover"
-            transition={150}
-          />
+          <Image source={{ uri: resolveImage(photo) }} style={styles.img} contentFit="cover" transition={150} />
         ) : (
           <View style={styles.imgFallback}>
-            <Ionicons name="image-outline" size={ms(24)} color={theme.colors.faint} />
+            <Ionicons name="image-outline" size={ms(24)} color={colors.faint} />
           </View>
         )}
         {listing.delivery && (
-          <View style={styles.deliveryBadge}>
+          <View style={[styles.deliveryBadge, { backgroundColor: colors.success }]}>
             <Ionicons name="bicycle" size={ms(10)} color="#fff" />
           </View>
         )}
       </View>
 
       <View style={styles.info}>
-        <Text numberOfLines={2} style={styles.title}>{listing.title}</Text>
-
-        <Text style={styles.price}>
+        <Text numberOfLines={2} style={[styles.title, { color: colors.text }]}>{listing.title}</Text>
+        <Text style={[styles.price, { color: colors.ink }]}>
           {formatPrice(listing.price.amount, listing.price.currency)}
         </Text>
-
         <View style={styles.meta}>
-          <View style={styles.condChip}>
-            <Text style={styles.condChipText}>
+          <View style={[styles.condChip, { backgroundColor: colors.primarySoft }]}>
+            <Text style={[styles.condChipText, { color: colors.primaryDark }]}>
               {CONDITION_LABELS[listing.condition] || listing.condition}
             </Text>
           </View>
           {listing.city ? (
             <View style={styles.cityRow}>
-              <Ionicons name="location-outline" size={ms(12)} color={theme.colors.faint} />
-              <Text style={styles.city} numberOfLines={1}>{listing.city}</Text>
+              <Ionicons name="location-outline" size={ms(12)} color={colors.faint} />
+              <Text style={[styles.city, { color: colors.faint }]} numberOfLines={1}>{listing.city}</Text>
             </View>
           ) : null}
         </View>
       </View>
 
-      <Ionicons name="chevron-forward" size={ms(15)} color={theme.colors.faint} style={styles.rowChevron} />
+      <Ionicons name="chevron-forward" size={ms(15)} color={colors.faint} style={styles.rowChevron} />
     </Pressable>
   );
 }
@@ -133,110 +120,58 @@ function RowCard({ listing }: { listing: Listing }) {
 const styles = StyleSheet.create({
   pressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
 
-  // ── Grid ──
   gCard: {
     flex: 1,
-    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.xl,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: theme.colors.border,
     ...theme.shadow.sm,
   },
-  gImgWrap: { width: '100%', aspectRatio: 1, backgroundColor: theme.colors.surface },
+  gImgWrap: { width: '100%', aspectRatio: 1 },
   gImg: { width: '100%', height: '100%' },
   gImgEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   gImgGrad: { position: 'absolute', bottom: 0, left: 0, right: 0, height: '50%' },
 
   condTag: {
-    position: 'absolute',
-    top: s(8),
-    left: s(8),
+    position: 'absolute', top: s(8), left: s(8),
     backgroundColor: 'rgba(9,16,40,0.72)',
-    paddingHorizontal: s(8),
-    paddingVertical: s(3),
-    borderRadius: theme.radius.pill,
+    paddingHorizontal: s(8), paddingVertical: s(3), borderRadius: 999,
   },
   condTagText: { color: '#fff', fontSize: ms(10), fontWeight: '800', letterSpacing: 0.3 },
 
   deliveryTag: {
-    position: 'absolute',
-    top: s(8),
-    right: s(8),
-    width: s(22),
-    height: s(22),
-    borderRadius: s(11),
-    backgroundColor: theme.colors.successSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: theme.colors.success + '40',
+    position: 'absolute', top: s(8), right: s(8),
+    width: s(22), height: s(22), borderRadius: s(11),
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1,
   },
 
   gInfo: { padding: s(10), gap: s(4) },
-  gPrice: {
-    fontSize: ms(15.5),
-    fontWeight: '900',
-    color: theme.colors.text,
-    fontVariant: ['tabular-nums'],
-    letterSpacing: -0.3,
-  },
-  gTitle: { fontSize: ms(12.5), fontWeight: '500', color: theme.colors.inkSoft, lineHeight: ms(17), minHeight: s(34) },
+  gPrice: { fontSize: ms(15.5), fontWeight: '900', fontVariant: ['tabular-nums'], letterSpacing: -0.3 },
+  gTitle: { fontSize: ms(12.5), fontWeight: '500', lineHeight: ms(17), minHeight: s(34) },
   gFoot: { flexDirection: 'row', alignItems: 'center', gap: s(3), marginTop: s(2) },
-  gMeta: { fontSize: ms(10.5), color: theme.colors.faint, fontWeight: '500', flexShrink: 1 },
-  dot: { width: s(3), height: s(3), borderRadius: 2, backgroundColor: theme.colors.faint },
+  gMeta: { fontSize: ms(10.5), fontWeight: '500', flexShrink: 1 },
+  dot: { width: s(3), height: s(3), borderRadius: 2 },
 
-  // ── Row ──
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.space.md,
-    backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.xl,
-    padding: s(10),
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    ...theme.shadow.sm,
+    flexDirection: 'row', alignItems: 'center', gap: theme.space.md,
+    borderRadius: theme.radius.xl, padding: s(10), borderWidth: 1, ...theme.shadow.sm,
   },
-  imgWrap: {
-    width: s(86),
-    height: s(86),
-    borderRadius: theme.radius.lg,
-    backgroundColor: theme.colors.surface,
-    overflow: 'hidden',
-  },
+  imgWrap: { width: s(86), height: s(86), borderRadius: theme.radius.lg, overflow: 'hidden' },
   img: { width: '100%', height: '100%' },
   imgFallback: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   deliveryBadge: {
-    position: 'absolute',
-    top: s(4),
-    right: s(4),
-    width: s(18),
-    height: s(18),
-    borderRadius: s(9),
-    backgroundColor: theme.colors.success,
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: 'absolute', top: s(4), right: s(4),
+    width: s(18), height: s(18), borderRadius: s(9),
+    alignItems: 'center', justifyContent: 'center',
   },
 
   info: { flex: 1, justifyContent: 'space-between', paddingVertical: s(2), gap: s(5) },
-  title: { fontSize: ms(14.5), fontWeight: '600', color: theme.colors.text, lineHeight: ms(19) },
-  price: {
-    fontSize: ms(16.5),
-    fontWeight: '900',
-    color: theme.colors.ink,
-    fontVariant: ['tabular-nums'],
-    letterSpacing: -0.3,
-  },
+  title: { fontSize: ms(14.5), fontWeight: '600', lineHeight: ms(19) },
+  price: { fontSize: ms(16.5), fontWeight: '900', fontVariant: ['tabular-nums'], letterSpacing: -0.3 },
   meta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: s(8) },
-  condChip: {
-    backgroundColor: theme.colors.primarySoft,
-    paddingHorizontal: s(9),
-    paddingVertical: s(3),
-    borderRadius: theme.radius.pill,
-  },
-  condChipText: { fontSize: ms(11), fontWeight: '800', color: theme.colors.primaryDark },
+  condChip: { paddingHorizontal: s(9), paddingVertical: s(3), borderRadius: 999 },
+  condChipText: { fontSize: ms(11), fontWeight: '800' },
   cityRow: { flexDirection: 'row', alignItems: 'center', gap: s(2), flex: 1, justifyContent: 'flex-end' },
-  city: { fontSize: ms(11.5), color: theme.colors.faint, fontWeight: '500' },
+  city: { fontSize: ms(11.5), fontWeight: '500' },
   rowChevron: { marginLeft: s(2) },
 });

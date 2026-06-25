@@ -1,11 +1,8 @@
 import { View, Text, StyleSheet, type ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useColors } from '../theme/useColors';
 import { theme } from '../theme';
 
-/**
- * Zapchasty so'z belgisi — "Zapchast" navy, "y" to'q-sariq urg'u (logoga mos).
- * `light` — to'q fon uchun (matn oq, "y" baribir to'q-sariq).
- */
 export function Wordmark({
   size = 22,
   light = false,
@@ -15,7 +12,8 @@ export function Wordmark({
   light?: boolean;
   style?: ViewStyle;
 }) {
-  const base = light ? '#ffffff' : theme.colors.brand;
+  const colors = useColors();
+  const base = light ? '#ffffff' : colors.ink;
   return (
     <Text
       style={[
@@ -25,14 +23,14 @@ export function Wordmark({
       ]}
       allowFontScaling={false}
     >
-      Zapchast<Text style={{ color: theme.colors.primary }}>y</Text>
+      Zapchast<Text style={{ color: colors.primary }}>y</Text>
     </Text>
   );
 }
 
-/** Brend belgisi — navy gradient kvadrat + oq "Z" va to'q-sariq urg'u nuqtasi. */
 export function LogoMark({ size = 40, radius }: { size?: number; radius?: number }) {
   const r = radius ?? Math.round(size * 0.3);
+  const colors = useColors();
   return (
     <LinearGradient
       colors={theme.gradients.brand}
@@ -44,14 +42,13 @@ export function LogoMark({ size = 40, radius }: { size?: number; radius?: number
       <View
         style={[
           styles.markDot,
-          { width: size * 0.16, height: size * 0.16, borderRadius: size * 0.08, right: size * 0.16, top: size * 0.18 },
+          { width: size * 0.16, height: size * 0.16, borderRadius: size * 0.08, right: size * 0.16, top: size * 0.18, backgroundColor: colors.primary },
         ]}
       />
     </LinearGradient>
   );
 }
 
-/** Belgi + so'z belgisi + ixtiyoriy tagline. Sarlavhalarda ishlatiladi. */
 export function BrandLockup({
   tagline = 'Ehtiyot qismlar bozori',
   markSize = 40,
@@ -63,13 +60,14 @@ export function BrandLockup({
   wordSize?: number;
   light?: boolean;
 }) {
+  const colors = useColors();
   return (
     <View style={styles.lockup}>
       <LogoMark size={markSize} />
       <View>
         <Wordmark size={wordSize} light={light} />
         {tagline ? (
-          <Text style={[styles.tagline, light && { color: 'rgba(255,255,255,0.7)' }]}>{tagline}</Text>
+          <Text style={[styles.tagline, { color: colors.muted }, light && { color: 'rgba(255,255,255,0.7)' }]}>{tagline}</Text>
         ) : null}
       </View>
     </View>
@@ -80,7 +78,7 @@ const styles = StyleSheet.create({
   word: { fontWeight: '800' },
   mark: { alignItems: 'center', justifyContent: 'center', ...theme.shadow.navy },
   markZ: { color: '#ffffff', fontWeight: '900', letterSpacing: -1 },
-  markDot: { position: 'absolute', backgroundColor: theme.colors.primary },
+  markDot: { position: 'absolute' },
   lockup: { flexDirection: 'row', alignItems: 'center', gap: 11 },
-  tagline: { fontSize: 12, color: theme.colors.muted, marginTop: 2, fontWeight: '500' },
+  tagline: { fontSize: 12, marginTop: 2, fontWeight: '500' },
 });

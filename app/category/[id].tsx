@@ -1,92 +1,129 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
-import { FlatList, View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
-import { Stack, useLocalSearchParams, router } from 'expo-router';
+import { FlatList, View, Text, Pressable, StyleSheet, ScrollView, StatusBar } from 'react-native';
+import { useLocalSearchParams, router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../src/lib/api';
+import { useColors, useScheme } from '../../src/theme/useColors';
 import { theme, s, ms } from '../../src/theme';
 import { ListingCard } from '../../src/components/ListingCard';
 import { Loading } from '../../src/components/Loading';
 import { EmptyState } from '../../src/components/EmptyState';
 import { categoryIcon } from '../../src/lib/category-icons';
-import type { PartCategory, PartType, Listing } from '../../src/lib/types';
+import type { PartCategory, PartType } from '../../src/lib/types';
 
-// ── Level 1 → Level 2 subcategory grid ──────────────────────────────
+function CategoryHeader({ title }: { title: string }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <LinearGradient
+      colors={theme.gradients.brand}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[styles.header, { paddingTop: insets.top + s(8) }]}
+    >
+      <StatusBar barStyle="light-content" />
+      <Pressable
+        style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.7 }]}
+        onPress={() => router.back()}
+        hitSlop={10}
+      >
+        <Ionicons name="chevron-back" size={ms(24)} color="#fff" />
+      </Pressable>
+      <Text style={styles.headerTitle} numberOfLines={1}>{title}</Text>
+      <View style={{ width: s(40) }} />
+    </LinearGradient>
+  );
+}
+
 function SubcategoryGrid({ categoryId, categoryName }: { categoryId: string; categoryName: string }) {
+  const colors = useColors();
+  const scheme = useScheme();
+  const iconGrad = scheme === 'dark'
+    ? ['rgba(120,150,255,0.18)', 'rgba(80,110,220,0.08)'] as const
+    : [colors.brandSoft, colors.brandSoftAlt] as const;
   const { data: subs, isLoading } = useQuery({
     queryKey: ['subcategories', categoryId],
     queryFn: () => api.subcategories(categoryId),
   });
 
   return (
-    <>
-      <Stack.Screen options={{ title: categoryName }} />
+    <View style={[styles.root, { backgroundColor: colors.bg }]}>
+      <CategoryHeader title={categoryName} />
       {isLoading ? (
         <Loading />
       ) : !subs?.length ? (
         <EmptyState icon="folder-open-outline" text="Pastki kategoriyalar topilmadi" />
       ) : (
-        <ScrollView contentContainerStyle={styles.subGrid}>
+        <ScrollView contentContainerStyle={styles.subGrid} showsVerticalScrollIndicator={false}>
           {subs.map((sub: PartCategory) => (
             <Pressable
               key={sub._id}
-              style={({ pressed }) => [styles.subCard, pressed && { opacity: 0.82, transform: [{ scale: 0.97 }] }]}
+              style={({ pressed }) => [
+                styles.subCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+                pressed && { opacity: 0.82, transform: [{ scale: 0.97 }] },
+              ]}
               onPress={() =>
                 router.push({ pathname: '/category/[id]', params: { id: sub._id, name: sub.name.ru, level: '2' } })
               }
             >
-              <LinearGradient colors={[theme.colors.brandSoft, '#dce5f8']} style={styles.subIcon}>
-                <Ionicons name={categoryIcon(sub.slug)} size={ms(28)} color={theme.colors.brand} />
+              <LinearGradient colors={iconGrad} style={styles.subIcon}>
+                <Ionicons name={categoryIcon(sub.slug)} size={ms(28)} color={colors.ink} />
               </LinearGradient>
               <View style={styles.subInfo}>
-                <Text style={styles.subName}>{sub.name.uz || sub.name.ru}</Text>
-                <Text style={styles.subHint}>Detallarni ko'rish →</Text>
+                <Text style={[styles.subName, { color: colors.text }]}>{sub.name.uz || sub.name.ru}</Text>
+                <Text style={[styles.subHint, { color: colors.muted }]}>Detallarni ko'rish →</Text>
               </View>
-              <Ionicons name="chevron-forward" size={ms(16)} color={theme.colors.muted} />
+              <Ionicons name="chevron-forward" size={ms(16)} color={colors.muted} />
             </Pressable>
           ))}
         </ScrollView>
       )}
-    </>
+    </View>
   );
 }
 
-// ── Level 2 → Level 3 part-type list ────────────────────────────────
 function PartTypeList({ categoryId, categoryName }: { categoryId: string; categoryName: string }) {
+  const colors = useColors();
   const { data: partTypes, isLoading } = useQuery({
     queryKey: ['part-types', categoryId],
     queryFn: () => api.categoryPartTypes(categoryId),
   });
 
   return (
-    <>
-      <Stack.Screen options={{ title: categoryName }} />
+    <View style={[styles.root, { backgroundColor: colors.bg }]}>
+      <CategoryHeader title={categoryName} />
       {isLoading ? (
         <Loading />
       ) : !partTypes?.length ? (
         <EmptyState icon="cube-outline" text="Detal turlari topilmadi" />
       ) : (
-        <ScrollView contentContainerStyle={styles.ptList}>
+        <ScrollView contentContainerStyle={styles.ptList} showsVerticalScrollIndicator={false}>
           {partTypes.map((pt: PartType) => (
             <Pressable
               key={pt._id}
-              style={({ pressed }) => [styles.ptRow, pressed && { opacity: 0.82 }]}
+              style={({ pressed }) => [
+                styles.ptRow,
+                { backgroundColor: colors.card, borderColor: colors.border },
+                pressed && { opacity: 0.82 },
+              ]}
               onPress={() =>
                 router.push({ pathname: '/category/[id]', params: { id: pt._id, name: pt.name, level: '3', partTypeId: pt._id } })
               }
             >
-              <Text style={styles.ptName}>{pt.name}</Text>
-              <Ionicons name="chevron-forward" size={ms(15)} color={theme.colors.muted} />
+              <Text style={[styles.ptName, { color: colors.text }]}>{pt.name}</Text>
+              <Ionicons name="chevron-forward" size={ms(15)} color={colors.muted} />
             </Pressable>
           ))}
         </ScrollView>
       )}
-    </>
+    </View>
   );
 }
 
-// ── Level 3 → Product listings ───────────────────────────────────────
 function ListingsByPartType({ partTypeId, name }: { partTypeId: string; name: string }) {
+  const colors = useColors();
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ['listings-by-parttype', partTypeId],
     queryFn: ({ pageParam }) => api.search({ partTypeId, page: pageParam, limit: 20 }),
@@ -96,8 +133,8 @@ function ListingsByPartType({ partTypeId, name }: { partTypeId: string; name: st
   const items = data?.pages.flatMap((p) => p.items) ?? [];
 
   return (
-    <>
-      <Stack.Screen options={{ title: name }} />
+    <View style={[styles.root, { backgroundColor: colors.bg }]}>
+      <CategoryHeader title={name} />
       {isLoading ? (
         <Loading />
       ) : (
@@ -110,78 +147,44 @@ function ListingsByPartType({ partTypeId, name }: { partTypeId: string; name: st
           onEndReached={() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage(); }}
           onEndReachedThreshold={0.5}
           ListFooterComponent={isFetchingNextPage ? <Loading /> : null}
+          showsVerticalScrollIndicator={false}
         />
       )}
-    </>
+    </View>
   );
 }
 
-// ── Router: determines which view to render based on `level` param ───
 export default function CategoryScreen() {
   const { id, name, level, partTypeId } = useLocalSearchParams<{
-    id: string;
-    name?: string;
-    level?: string;
-    partTypeId?: string;
+    id: string; name?: string; level?: string; partTypeId?: string;
   }>();
 
-  // Level 3: show listings for a specific part type
-  if (level === '3' && partTypeId) {
-    return <ListingsByPartType partTypeId={partTypeId} name={name || 'E\'lonlar'} />;
-  }
-
-  // Level 2: show part types inside this subcategory
-  if (level === '2') {
-    return <PartTypeList categoryId={id} categoryName={name || 'Kategoriya'} />;
-  }
-
-  // Level 1 (default): show subcategories
+  if (level === '3' && partTypeId) return <ListingsByPartType partTypeId={partTypeId} name={name || "E'lonlar"} />;
+  if (level === '2') return <PartTypeList categoryId={id} categoryName={name || 'Kategoriya'} />;
   return <SubcategoryGrid categoryId={id} categoryName={name || 'Kategoriya'} />;
 }
 
 const styles = StyleSheet.create({
-  // Subcategory grid (Level 1 view)
-  subGrid: {
-    padding: s(16),
-    gap: s(12),
+  root: { flex: 1 },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: s(12), paddingBottom: s(14),
+    borderBottomLeftRadius: s(22), borderBottomRightRadius: s(22),
+    ...theme.shadow.navy,
   },
-  subCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: s(14),
-    backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.xl,
-    padding: s(14),
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    ...theme.shadow.sm,
+  backBtn: {
+    width: s(40), height: s(40), borderRadius: s(20),
+    backgroundColor: 'rgba(255,255,255,0.14)', borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center',
   },
-  subIcon: {
-    width: s(52),
-    height: s(52),
-    borderRadius: theme.radius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  headerTitle: { fontSize: ms(17), fontWeight: '800', color: '#fff', letterSpacing: -0.2, flex: 1, textAlign: 'center' },
+  subGrid: { padding: s(16), gap: s(12) },
+  subCard: { flexDirection: 'row', alignItems: 'center', gap: s(14), borderRadius: theme.radius.xl, padding: s(14), borderWidth: 1, ...theme.shadow.sm },
+  subIcon: { width: s(52), height: s(52), borderRadius: theme.radius.lg, alignItems: 'center', justifyContent: 'center' },
   subInfo: { flex: 1 },
-  subName: { fontSize: ms(15), fontWeight: '700', color: theme.colors.text },
-  subHint: { fontSize: ms(12), color: theme.colors.muted, marginTop: s(2) },
-
-  // Part-type list (Level 2 view)
-  ptList: {
-    padding: s(16),
-    gap: s(8),
-  },
-  ptRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.lg,
-    paddingVertical: s(14),
-    paddingHorizontal: s(16),
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  ptName: { fontSize: ms(14.5), fontWeight: '600', color: theme.colors.text, flex: 1 },
+  subName: { fontSize: ms(15), fontWeight: '700' },
+  subHint: { fontSize: ms(12), marginTop: s(2) },
+  ptList: { padding: s(16), gap: s(8) },
+  ptRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: theme.radius.lg, paddingVertical: s(14), paddingHorizontal: s(16), borderWidth: 1 },
+  ptName: { fontSize: ms(14.5), fontWeight: '600', flex: 1 },
 });

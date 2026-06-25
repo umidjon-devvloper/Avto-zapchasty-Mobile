@@ -5,32 +5,26 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
+import { useColors } from '../../src/theme/useColors';
 import { theme, s, ms } from '../../src/theme';
 import type { ConversationItem } from '../../src/lib/types';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
 function TabIcon({
-  base,
-  color,
-  size,
-  focused,
-  badge,
+  base, color, size, focused, badge,
 }: {
-  base: string;
-  color: string;
-  size: number;
-  focused: boolean;
-  badge?: number;
+  base: string; color: string; size: number; focused: boolean; badge?: number;
 }) {
+  const colors = useColors();
   const iconName = (focused ? base : `${base}-outline`) as IoniconName;
   return (
     <View style={tabStyles.wrap}>
-      {focused && <View style={tabStyles.dot} />}
+      {focused && <View style={[tabStyles.dot, { backgroundColor: colors.primary }]} />}
       <Ionicons name={iconName} color={color} size={focused ? size + 1 : size} />
       {badge && badge > 0 ? (
         <View style={tabStyles.badge}>
-          <Ionicons name="ellipse" size={8} color={theme.colors.primary} />
+          <Ionicons name="ellipse" size={8} color={colors.primary} />
         </View>
       ) : null}
     </View>
@@ -39,20 +33,14 @@ function TabIcon({
 
 const tabStyles = StyleSheet.create({
   wrap: { alignItems: 'center', justifyContent: 'center', width: s(36), height: s(36) },
-  dot: {
-    position: 'absolute',
-    top: 0,
-    width: s(22),
-    height: s(3),
-    borderRadius: 2,
-    backgroundColor: theme.colors.primary,
-  },
+  dot: { position: 'absolute', top: 0, width: s(22), height: s(3), borderRadius: 2 },
   badge: { position: 'absolute', top: 2, right: 2 },
 });
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const token = useAuth((st) => st.accessToken);
+  const colors = useColors();
   const { data } = useQuery({
     queryKey: ['conversations'],
     queryFn: api.conversations,
@@ -61,8 +49,6 @@ export default function TabsLayout() {
   });
   const unread = (data ?? []).reduce((sum: number, c: ConversationItem) => sum + c.unread, 0);
 
-  // Tab bar balandligi: kontent (~58px) + qurilmaning pastki xavfsiz zonasi.
-  // Bu iOS notch, Android gesture-nav va oddiy tugmali navigatsiyaga moslashadi.
   const barContent = s(58);
   const bottomInset = Math.max(insets.bottom, s(8));
 
@@ -70,8 +56,9 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: theme.colors.brand,
-        tabBarInactiveTintColor: theme.colors.faint,
+        sceneStyle: { backgroundColor: colors.bg },
+        tabBarActiveTintColor: colors.ink,
+        tabBarInactiveTintColor: colors.faint,
         tabBarLabelStyle: {
           fontSize: ms(10.5),
           fontWeight: '700',
@@ -80,16 +67,16 @@ export default function TabsLayout() {
         },
         tabBarItemStyle: { paddingVertical: s(6) },
         tabBarStyle: {
-          borderTopColor: theme.colors.hairline,
+          borderTopColor: colors.hairline,
           borderTopWidth: 1,
-          backgroundColor: theme.colors.card,
+          backgroundColor: colors.card,
           height: barContent + bottomInset,
           paddingTop: s(8),
           paddingBottom: bottomInset,
           ...theme.shadow.md,
         },
         tabBarBadgeStyle: {
-          backgroundColor: theme.colors.primary,
+          backgroundColor: colors.primary,
           color: '#fff',
           fontSize: 10,
           fontWeight: '800',

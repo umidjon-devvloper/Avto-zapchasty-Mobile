@@ -3,11 +3,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useColors } from '../theme/useColors';
 import { theme, s, ms } from '../theme';
 import { Button } from './Button';
 import { LogoMark, Wordmark } from './Brand';
 
 export function AuthPrompt({ text }: { text: string }) {
+  const colors = useColors();
   return (
     <View style={styles.root}>
       <LinearGradient
@@ -25,12 +27,12 @@ export function AuthPrompt({ text }: { text: string }) {
 
           <View style={styles.divider} />
 
-          <View style={styles.card}>
-            <View style={styles.iconRing}>
-              <Ionicons name="lock-closed-outline" size={ms(28)} color={theme.colors.brand} />
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.iconRing, { backgroundColor: colors.brandSoft, borderColor: colors.border }]}>
+              <Ionicons name="lock-closed-outline" size={ms(28)} color={colors.ink} />
             </View>
-            <Text style={styles.title}>Kirish talab etiladi</Text>
-            <Text style={styles.sub}>{text}</Text>
+            <Text style={[styles.title, { color: colors.text }]}>Kirish talab etiladi</Text>
+            <Text style={[styles.sub, { color: colors.muted }]}>{text}</Text>
 
             <Button
               title="Tizimga kirish"
@@ -55,7 +57,6 @@ const styles = StyleSheet.create({
   bg: { ...StyleSheet.absoluteFillObject },
   safe: { flex: 1 },
   content: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: s(24), gap: 0 },
-
   logoCard: {
     width: s(88),
     height: s(88),
@@ -66,12 +67,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   divider: { height: s(32) },
-
   card: {
-    backgroundColor: theme.colors.card,
     borderRadius: s(28),
+    borderWidth: 1,
     padding: s(28),
     alignItems: 'center',
     gap: s(12),
@@ -83,20 +82,12 @@ const styles = StyleSheet.create({
     width: s(64),
     height: s(64),
     borderRadius: s(22),
-    backgroundColor: theme.colors.brandSoft,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: s(4),
     borderWidth: 1,
-    borderColor: theme.colors.border,
   },
-  title: { fontSize: ms(20), fontWeight: '800', color: theme.colors.text, letterSpacing: -0.3 },
-  sub: {
-    fontSize: ms(14),
-    color: theme.colors.muted,
-    textAlign: 'center',
-    lineHeight: ms(21),
-    marginBottom: s(4),
-  },
+  title: { fontSize: ms(20), fontWeight: '800', letterSpacing: -0.3 },
+  sub: { fontSize: ms(14), textAlign: 'center', lineHeight: ms(21), marginBottom: s(4) },
   btn: { width: '100%' },
 });

@@ -2,6 +2,7 @@ import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useColors, useScheme } from '../theme/useColors';
 import { theme, s, ms } from '../theme';
 import { categoryIcon } from '../lib/category-icons';
 import type { PartCategory } from '../lib/types';
@@ -14,30 +15,42 @@ interface CategoryTileProps {
 
 export function CategoryTile({ category, width, variant = 'horizontal' }: CategoryTileProps) {
   const isGrid = variant === 'grid';
+  const colors = useColors();
+  const scheme = useScheme();
+  const iconGrad = scheme === 'dark'
+    ? ['rgba(120,150,255,0.18)', 'rgba(80,110,220,0.08)'] as const
+    : [colors.brandSoft, colors.brandSoftAlt] as const;
+  const iconColor = scheme === 'dark' ? colors.ink : colors.brand;
   return (
     <Pressable
       onPress={() =>
         router.push({ pathname: '/category/[id]', params: { id: category._id, name: category.name.ru } })
       }
       style={({ pressed }) => [
-        isGrid ? styles.gridTile : styles.tile,
+        isGrid
+          ? [styles.gridTile, { backgroundColor: colors.card, borderColor: colors.border }]
+          : styles.tile,
         !isGrid && width ? { width, flex: 0 } : null,
         pressed && { opacity: 0.82, transform: [{ scale: 0.94 }] },
       ]}
     >
       <View style={[styles.iconShadow, isGrid && styles.iconShadowGrid]}>
         <LinearGradient
-          colors={[theme.colors.brandSoft, '#dce5f8']}
-          style={[styles.iconWrap, isGrid && styles.iconWrapGrid]}
+          colors={iconGrad}
+          style={[styles.iconWrap, { borderColor: colors.border }, isGrid && styles.iconWrapGrid]}
         >
           <Ionicons
             name={categoryIcon(category.slug)}
             size={isGrid ? ms(32) : ms(26)}
-            color={theme.colors.brand}
+            color={iconColor}
           />
         </LinearGradient>
       </View>
-      <Text numberOfLines={2} style={[styles.label, isGrid && styles.labelGrid]}>
+      <Text numberOfLines={2} style={[
+        styles.label,
+        { color: colors.inkSoft },
+        isGrid && [styles.labelGrid, { color: colors.text }],
+      ]}>
         {category.name.uz || category.name.ru}
       </Text>
     </Pressable>
@@ -50,12 +63,10 @@ const styles = StyleSheet.create({
     width: '48%',
     alignItems: 'center',
     gap: s(10),
-    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.xl,
     paddingVertical: s(18),
     paddingHorizontal: s(8),
     borderWidth: 1,
-    borderColor: theme.colors.border,
     ...theme.shadow.sm,
   },
   iconShadow: { borderRadius: theme.radius.lg, ...theme.shadow.sm },
@@ -67,26 +78,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: theme.colors.border,
   },
-  iconWrapGrid: {
-    width: s(72),
-    height: s(72),
-    borderRadius: theme.radius.xl,
-  },
+  iconWrapGrid: { width: s(72), height: s(72), borderRadius: theme.radius.xl },
   label: {
     fontSize: ms(11.5),
-    color: theme.colors.inkSoft,
     textAlign: 'center',
     lineHeight: ms(15),
     fontWeight: '600',
     maxWidth: s(68),
   },
-  labelGrid: {
-    fontSize: ms(13),
-    color: theme.colors.text,
-    fontWeight: '700',
-    maxWidth: s(120),
-    lineHeight: ms(17),
-  },
+  labelGrid: { fontSize: ms(13), fontWeight: '700', maxWidth: s(120), lineHeight: ms(17) },
 });

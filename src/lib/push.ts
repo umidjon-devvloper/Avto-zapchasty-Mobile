@@ -14,12 +14,13 @@ Notifications.setNotificationHandler({
   }),
 });
 
+let _registering = false;
+let _registered = false;
+
 export async function registerForPush(): Promise<string | null> {
-  // Haqiqiy qurilma bo'lmasa (simulator/emulator) — push ishlamaydi
-  if (!Device.isDevice) {
-    console.log('[push] Simulator aniqlandi — push notifications ishlamaydi. Development build kerak.');
-    return null;
-  }
+  if (!Device.isDevice) return null;
+  if (_registered || _registering) return null;
+  _registering = true;
 
   try {
     const existing = await Notifications.getPermissionsAsync();
@@ -42,25 +43,28 @@ export async function registerForPush(): Promise<string | null> {
       });
     }
 
-    const projectId =
-      Constants.expoConfig?.extra?.eas?.projectId as string | undefined
-      ?? Constants.easConfig?.projectId;
-
-    if (!projectId) {
-      console.log('[push] EAS projectId topilmadi — expo-notifications SDK 53+ da projectId majburiy.');
-      return null;
-    }
+    const projectId: string =
+      (Constants.expoConfig?.extra?.eas?.projectId as string | undefined)
+      ?? Constants.easConfig?.projectId
+      ?? '204db17c-cd95-46b5-a16a-b668480776b0';
 
     const resp = await Notifications.getExpoPushTokenAsync({ projectId });
     const token = resp.data;
-    console.log('[push] Token:', token);
+    console.log('[push] Token olindi:', token);
     useAuth.getState().setPushToken(token);
-    await api.registerPushToken(token);
+    try {
+      await api.registerPushToken(token);
+      console.log('[push] Token serverga yuborildi ✓');
+    } catch (apiErr) {
+      console.log('[push] Token serverga yuborishda xato:', apiErr);
+    }
+    _registered = true;
     return token;
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e);
-    console.log('[push] Xatolik:', msg);
+    console.log('[push] registerForPush xato:', e);
     return null;
+  } finally {
+    _registering = false;
   }
 }
 
@@ -70,4 +74,6 @@ export async function unregisterPush(): Promise<void> {
     try { await api.removePushToken(token); } catch { /* ignore */ }
   }
   useAuth.getState().setPushToken(null);
+  _registered = false;
+  _registering = false;
 }

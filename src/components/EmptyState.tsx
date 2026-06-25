@@ -1,7 +1,8 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { theme, s, ms } from '../theme';
+import { useColors } from '../theme/useColors';
+import { s, ms } from '../theme';
 
 export function EmptyState({
   icon = 'file-tray-outline',
@@ -12,16 +13,17 @@ export function EmptyState({
   text: string;
   sub?: string;
 }) {
+  const colors = useColors();
   return (
     <View style={styles.wrap}>
       <LinearGradient
-        colors={[theme.colors.brandSoft, '#dce5f8']}
-        style={styles.iconWrap}
+        colors={[colors.brandSoft, colors.brandSoftAlt]}
+        style={[styles.iconWrap, { borderColor: colors.border }]}
       >
-        <Ionicons name={icon} size={ms(36)} color={theme.colors.brand} />
+        <Ionicons name={icon} size={ms(36)} color={colors.ink} />
       </LinearGradient>
-      <Text style={styles.text}>{text}</Text>
-      {sub ? <Text style={styles.sub}>{sub}</Text> : null}
+      <Text style={[styles.text, { color: colors.text }]}>{text}</Text>
+      {sub ? <Text style={[styles.sub, { color: colors.muted }]}>{sub}</Text> : null}
     </View>
   );
 }
@@ -35,8 +37,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: theme.colors.border,
   },
-  text: { fontSize: ms(16), fontWeight: '700', color: theme.colors.text, textAlign: 'center' },
-  sub: { fontSize: ms(13.5), color: theme.colors.muted, textAlign: 'center', lineHeight: ms(20) },
+  text: { fontSize: ms(16), fontWeight: '700', textAlign: 'center' },
+  sub: { fontSize: ms(13.5), textAlign: 'center', lineHeight: ms(20) },
 });
