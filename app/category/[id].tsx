@@ -13,7 +13,22 @@ import { EmptyState } from '../../src/components/EmptyState';
 import { categoryIcon } from '../../src/lib/category-icons';
 import type { PartCategory, PartType } from '../../src/lib/types';
 
-function CategoryHeader({ title }: { title: string }) {
+// Ikki tonli premium sxema — navy va amber (accent) almashib turadi
+function useTones() {
+  const colors = useColors();
+  const scheme = useScheme();
+  return scheme === 'dark'
+    ? [
+        { grad: ['rgba(120,150,255,0.18)', 'rgba(80,110,220,0.08)'] as const, icon: colors.ink },
+        { grad: ['rgba(244,122,31,0.18)', 'rgba(244,122,31,0.07)'] as const, icon: colors.primary },
+      ]
+    : [
+        { grad: [colors.brandSoft, colors.brandSoftAlt] as const, icon: colors.brand },
+        { grad: [colors.primarySoft, '#ffe4c7'] as const, icon: colors.primary },
+      ];
+}
+
+function CategoryHeader({ title, subtitle, slug }: { title: string; subtitle?: string; slug?: string }) {
   const insets = useSafeAreaInsets();
   return (
     <LinearGradient
@@ -23,25 +38,35 @@ function CategoryHeader({ title }: { title: string }) {
       style={[styles.header, { paddingTop: insets.top + s(8) }]}
     >
       <StatusBar barStyle="light-content" />
-      <Pressable
-        style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.7 }]}
-        onPress={() => router.back()}
-        hitSlop={10}
-      >
-        <Ionicons name="chevron-back" size={ms(24)} color="#fff" />
-      </Pressable>
-      <Text style={styles.headerTitle} numberOfLines={1}>{title}</Text>
-      <View style={{ width: s(40) }} />
+      <View style={styles.headerTop}>
+        <Pressable
+          style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.7 }]}
+          onPress={() => router.back()}
+          hitSlop={10}
+        >
+          <Ionicons name="chevron-back" size={ms(24)} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle} numberOfLines={1}>{title}</Text>
+        <View style={{ width: s(40) }} />
+      </View>
+      {slug && (
+        <View style={styles.headerHero}>
+          <View style={styles.headerIconWrap}>
+            <Ionicons name={categoryIcon(slug)} size={ms(28)} color="#fff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.headerHeroTitle} numberOfLines={1}>{title}</Text>
+            {subtitle && <Text style={styles.headerHeroSubtitle}>{subtitle}</Text>}
+          </View>
+        </View>
+      )}
     </LinearGradient>
   );
 }
 
-function SubcategoryGrid({ categoryId, categoryName }: { categoryId: string; categoryName: string }) {
+function SubcategoryGrid({ categoryId, categoryName, slug }: { categoryId: string; categoryName: string; slug?: string }) {
   const colors = useColors();
-  const scheme = useScheme();
-  const iconGrad = scheme === 'dark'
-    ? ['rgba(120,150,255,0.18)', 'rgba(80,110,220,0.08)'] as const
-    : [colors.brandSoft, colors.brandSoftAlt] as const;
+  const tones = useTones();
   const { data: subs, isLoading } = useQuery({
     queryKey: ['subcategories', categoryId],
     queryFn: () => api.subcategories(categoryId),
@@ -49,43 +74,56 @@ function SubcategoryGrid({ categoryId, categoryName }: { categoryId: string; cat
 
   return (
     <View style={[styles.root, { backgroundColor: colors.bg }]}>
-      <CategoryHeader title={categoryName} />
-      {isLoading ? (
-        <Loading />
-      ) : !subs?.length ? (
-        <EmptyState icon="folder-open-outline" text="Pastki kategoriyalar topilmadi" />
-      ) : (
-        <ScrollView contentContainerStyle={styles.subGrid} showsVerticalScrollIndicator={false}>
-          {subs.map((sub: PartCategory) => (
-            <Pressable
-              key={sub._id}
-              style={({ pressed }) => [
-                styles.subCard,
-                { backgroundColor: colors.card, borderColor: colors.border },
-                pressed && { opacity: 0.82, transform: [{ scale: 0.97 }] },
-              ]}
-              onPress={() =>
-                router.push({ pathname: '/category/[id]', params: { id: sub._id, name: sub.name.ru, level: '2' } })
-              }
-            >
-              <LinearGradient colors={iconGrad} style={styles.subIcon}>
-                <Ionicons name={categoryIcon(sub.slug)} size={ms(28)} color={colors.ink} />
-              </LinearGradient>
-              <View style={styles.subInfo}>
-                <Text style={[styles.subName, { color: colors.text }]}>{sub.name.uz || sub.name.ru}</Text>
-                <Text style={[styles.subHint, { color: colors.muted }]}>Detallarni ko'rish →</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={ms(16)} color={colors.muted} />
-            </Pressable>
-          ))}
-        </ScrollView>
-      )}
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+        <CategoryHeader
+          title={categoryName}
+          slug={slug}
+          subtitle={subs?.length ? `${subs.length} bo'lim · kerakli bo'limni tanlang` : undefined}
+        />
+        {isLoading ? (
+          <Loading />
+        ) : !subs?.length ? (
+          <EmptyState icon="folder-open-outline" text="Pastki kategoriyalar topilmadi" />
+        ) : (
+          <View style={styles.subGrid}>
+            {subs.map((sub: PartCategory, i: number) => {
+              const tone = tones[i % tones.length];
+              return (
+                <Pressable
+                  key={sub._id}
+                  style={({ pressed }) => [
+                    styles.subCard,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                    pressed && { opacity: 0.82, transform: [{ scale: 0.97 }] },
+                  ]}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/category/[id]',
+                      params: { id: sub._id, name: sub.name.uz || sub.name.ru, slug: sub.slug, level: '2' },
+                    })
+                  }
+                >
+                  <LinearGradient colors={tone.grad} style={styles.subIcon}>
+                    <Ionicons name={categoryIcon(sub.slug)} size={ms(28)} color={tone.icon} />
+                  </LinearGradient>
+                  <View style={styles.subInfo}>
+                    <Text style={[styles.subName, { color: colors.text }]}>{sub.name.uz || sub.name.ru}</Text>
+                    <Text style={[styles.subHint, { color: colors.muted }]}>Detallarni ko'rish →</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={ms(16)} color={colors.muted} />
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+      </ScrollView>
     </View>
   );
 }
 
-function PartTypeList({ categoryId, categoryName }: { categoryId: string; categoryName: string }) {
+function PartTypeList({ categoryId, categoryName, slug }: { categoryId: string; categoryName: string; slug?: string }) {
   const colors = useColors();
+  const tones = useTones();
   const { data: partTypes, isLoading } = useQuery({
     queryKey: ['part-types', categoryId],
     queryFn: () => api.categoryPartTypes(categoryId),
@@ -93,31 +131,42 @@ function PartTypeList({ categoryId, categoryName }: { categoryId: string; catego
 
   return (
     <View style={[styles.root, { backgroundColor: colors.bg }]}>
-      <CategoryHeader title={categoryName} />
-      {isLoading ? (
-        <Loading />
-      ) : !partTypes?.length ? (
-        <EmptyState icon="cube-outline" text="Detal turlari topilmadi" />
-      ) : (
-        <ScrollView contentContainerStyle={styles.ptList} showsVerticalScrollIndicator={false}>
-          {partTypes.map((pt: PartType) => (
-            <Pressable
-              key={pt._id}
-              style={({ pressed }) => [
-                styles.ptRow,
-                { backgroundColor: colors.card, borderColor: colors.border },
-                pressed && { opacity: 0.82 },
-              ]}
-              onPress={() =>
-                router.push({ pathname: '/category/[id]', params: { id: pt._id, name: pt.name, level: '3', partTypeId: pt._id } })
-              }
-            >
-              <Text style={[styles.ptName, { color: colors.text }]}>{pt.name}</Text>
-              <Ionicons name="chevron-forward" size={ms(15)} color={colors.muted} />
-            </Pressable>
-          ))}
-        </ScrollView>
-      )}
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+        <CategoryHeader title={categoryName} slug={slug} subtitle="aniq detal turini tanlang" />
+        {isLoading ? (
+          <Loading />
+        ) : !partTypes?.length ? (
+          <EmptyState icon="cube-outline" text="Detal turlari topilmadi" />
+        ) : (
+          <View style={styles.ptList}>
+            {partTypes.map((pt: PartType, i: number) => {
+              const tone = tones[i % tones.length];
+              return (
+                <Pressable
+                  key={pt._id}
+                  style={({ pressed }) => [
+                    styles.ptRow,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                    pressed && { opacity: 0.82 },
+                  ]}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/category/[id]',
+                      params: { id: pt._id, name: pt.name, level: '3', partTypeId: pt._id },
+                    })
+                  }
+                >
+                  <LinearGradient colors={tone.grad} style={styles.ptIcon}>
+                    <Ionicons name="build-outline" size={ms(17)} color={tone.icon} />
+                  </LinearGradient>
+                  <Text style={[styles.ptName, { color: colors.text }]}>{pt.name}</Text>
+                  <Ionicons name="chevron-forward" size={ms(15)} color={colors.muted} />
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+      </ScrollView>
     </View>
   );
 }
@@ -134,16 +183,27 @@ function ListingsByPartType({ partTypeId, name }: { partTypeId: string; name: st
 
   return (
     <View style={[styles.root, { backgroundColor: colors.bg }]}>
-      <CategoryHeader title={name} />
       {isLoading ? (
-        <Loading />
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+          <CategoryHeader title={name} />
+          <Loading />
+        </ScrollView>
       ) : (
         <FlatList
           data={items}
           keyExtractor={(it) => it._id}
-          renderItem={({ item }) => <ListingCard listing={item} />}
-          contentContainerStyle={{ padding: theme.space.lg, gap: theme.space.md, flexGrow: 1 }}
-          ListEmptyComponent={<EmptyState icon="cube-outline" text="Bu bo'limda e'lon yo'q" />}
+          renderItem={({ item }) => (
+            <View style={{ paddingHorizontal: theme.space.lg }}>
+              <ListingCard listing={item} />
+            </View>
+          )}
+          ListHeaderComponent={<CategoryHeader title={name} />}
+          contentContainerStyle={{ paddingBottom: theme.space.lg, gap: theme.space.md, flexGrow: 1 }}
+          ListEmptyComponent={
+            <View style={{ padding: theme.space.lg }}>
+              <EmptyState icon="cube-outline" text="Bu bo'limda e'lon yo'q" />
+            </View>
+          }
           onEndReached={() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage(); }}
           onEndReachedThreshold={0.5}
           ListFooterComponent={isFetchingNextPage ? <Loading /> : null}
@@ -155,29 +215,37 @@ function ListingsByPartType({ partTypeId, name }: { partTypeId: string; name: st
 }
 
 export default function CategoryScreen() {
-  const { id, name, level, partTypeId } = useLocalSearchParams<{
-    id: string; name?: string; level?: string; partTypeId?: string;
+  const { id, name, level, partTypeId, slug } = useLocalSearchParams<{
+    id: string; name?: string; level?: string; partTypeId?: string; slug?: string;
   }>();
 
   if (level === '3' && partTypeId) return <ListingsByPartType partTypeId={partTypeId} name={name || "E'lonlar"} />;
-  if (level === '2') return <PartTypeList categoryId={id} categoryName={name || 'Kategoriya'} />;
-  return <SubcategoryGrid categoryId={id} categoryName={name || 'Kategoriya'} />;
+  if (level === '2') return <PartTypeList categoryId={id} categoryName={name || 'Kategoriya'} slug={slug} />;
+  return <SubcategoryGrid categoryId={id} categoryName={name || 'Kategoriya'} slug={slug} />;
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: s(12), paddingBottom: s(14),
+    paddingHorizontal: s(12), paddingBottom: s(16),
     borderBottomLeftRadius: s(22), borderBottomRightRadius: s(22),
     ...theme.shadow.navy,
   },
+  headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   backBtn: {
     width: s(40), height: s(40), borderRadius: s(20),
     backgroundColor: 'rgba(255,255,255,0.14)', borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center',
   },
   headerTitle: { fontSize: ms(17), fontWeight: '800', color: '#fff', letterSpacing: -0.2, flex: 1, textAlign: 'center' },
+  headerHero: { flexDirection: 'row', alignItems: 'center', gap: s(12), marginTop: s(16), paddingHorizontal: s(4) },
+  headerIconWrap: {
+    width: s(48), height: s(48), borderRadius: theme.radius.lg,
+    backgroundColor: 'rgba(255,255,255,0.14)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  headerHeroTitle: { fontSize: ms(18), fontWeight: '800', color: '#fff', letterSpacing: -0.3 },
+  headerHeroSubtitle: { fontSize: ms(12.5), color: 'rgba(255,255,255,0.7)', marginTop: s(2) },
   subGrid: { padding: s(16), gap: s(12) },
   subCard: { flexDirection: 'row', alignItems: 'center', gap: s(14), borderRadius: theme.radius.xl, padding: s(14), borderWidth: 1, ...theme.shadow.sm },
   subIcon: { width: s(52), height: s(52), borderRadius: theme.radius.lg, alignItems: 'center', justifyContent: 'center' },
@@ -185,6 +253,7 @@ const styles = StyleSheet.create({
   subName: { fontSize: ms(15), fontWeight: '700' },
   subHint: { fontSize: ms(12), marginTop: s(2) },
   ptList: { padding: s(16), gap: s(8) },
-  ptRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: theme.radius.lg, paddingVertical: s(14), paddingHorizontal: s(16), borderWidth: 1 },
+  ptRow: { flexDirection: 'row', alignItems: 'center', gap: s(12), borderRadius: theme.radius.lg, paddingVertical: s(10), paddingHorizontal: s(12), borderWidth: 1 },
+  ptIcon: { width: s(36), height: s(36), borderRadius: theme.radius.md, alignItems: 'center', justifyContent: 'center' },
   ptName: { fontSize: ms(14.5), fontWeight: '600', flex: 1 },
 });

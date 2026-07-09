@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { ScrollView, View, Text, Pressable, StyleSheet, FlatList } from 'react-native';
-import { useCallback } from 'react';
+import { ScrollView, View, Text, Pressable, StyleSheet, FlatList, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { useCallback, useRef } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { setStatusBarStyle } from 'expo-status-bar';
@@ -24,10 +24,16 @@ function chunk<T>(arr: T[], n: number): T[][] {
 function CategoryRow({ categories }: { categories: PartCategory[] }) {
   const colors = useColors();
   const scheme = useScheme();
-  const iconGrad = scheme === 'dark'
-    ? ['rgba(120,150,255,0.20)', 'rgba(80,110,220,0.08)'] as const
-    : ['#eaeef8', '#dce5f8'] as const;
-  const iconColor = scheme === 'dark' ? colors.ink : colors.brand;
+  // Ikki tonli premium sxema — navy va amber (accent) almashib turadi
+  const tones = scheme === 'dark'
+    ? [
+        { grad: ['rgba(120,150,255,0.20)', 'rgba(80,110,220,0.08)'] as const, icon: colors.ink },
+        { grad: ['rgba(244,122,31,0.20)', 'rgba(244,122,31,0.08)'] as const, icon: colors.primary },
+      ]
+    : [
+        { grad: [colors.brandSoft, colors.brandSoftAlt] as const, icon: colors.brand },
+        { grad: [colors.primarySoft, '#ffe4c7'] as const, icon: colors.primary },
+      ];
 
   return (
     <FlatList
@@ -37,23 +43,28 @@ function CategoryRow({ categories }: { categories: PartCategory[] }) {
       keyExtractor={(c) => c._id}
       contentContainerStyle={styles.catRow}
       ItemSeparatorComponent={() => <View style={{ width: s(10) }} />}
-      renderItem={({ item: c }) => (
-        <Pressable
-          style={({ pressed }) => [
-            styles.catCard,
-            { backgroundColor: colors.card, borderColor: colors.border },
-            pressed && { opacity: 0.82, transform: [{ scale: 0.95 }] },
-          ]}
-          onPress={() => router.push({ pathname: '/category/[id]', params: { id: c._id, name: c.name.ru } })}
-        >
-          <LinearGradient colors={iconGrad} style={styles.catIconWrap}>
-            <Ionicons name={categoryIcon(c.slug)} size={ms(28)} color={iconColor} />
-          </LinearGradient>
-          <Text numberOfLines={2} style={[styles.catName, { color: colors.text }]}>
-            {c.name.uz || c.name.ru}
-          </Text>
-        </Pressable>
-      )}
+      renderItem={({ item: c, index }) => {
+        const tone = tones[index % tones.length];
+        return (
+          <Pressable
+            style={({ pressed }) => [
+              styles.catCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+              pressed && { opacity: 0.82, transform: [{ scale: 0.95 }] },
+            ]}
+            onPress={() =>
+              router.push({ pathname: '/category/[id]', params: { id: c._id, name: c.name.uz || c.name.ru, slug: c.slug } })
+            }
+          >
+            <LinearGradient colors={tone.grad} style={styles.catIconWrap}>
+              <Ionicons name={categoryIcon(c.slug)} size={ms(28)} color={tone.icon} />
+            </LinearGradient>
+            <Text numberOfLines={2} style={[styles.catName, { color: colors.text }]}>
+              {c.name.uz || c.name.ru}
+            </Text>
+          </Pressable>
+        );
+      }}
     />
   );
 }
@@ -69,49 +80,65 @@ export default function Home() {
 
   const latestItems = latest?.items ?? [];
 
+  const scrolledPastHero = useRef(false);
+
   useFocusEffect(useCallback(() => {
     setStatusBarStyle('light');
+    scrolledPastHero.current = false;
     return () => setStatusBarStyle('dark');
   }, []));
 
+  const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const past = e.nativeEvent.contentOffset.y > s(150);
+    if (past !== scrolledPastHero.current) {
+      scrolledPastHero.current = past;
+      setStatusBarStyle(past ? 'dark' : 'light');
+    }
+  }, []);
+
   return (
     <View style={[styles.root, { backgroundColor: colors.bg }]}>
-      <LinearGradient colors={theme.gradients.brand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
-        <SafeAreaView edges={['top']}>
-          <View style={styles.heroTop}>
-            <View style={styles.logoRow}>
-              <LogoMark size={s(40)} />
-              <View>
-                <Wordmark size={ms(19)} light />
-                <Text style={styles.heroTagline}>Ehtiyot qismlar bozori</Text>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={32}
+      >
+        <LinearGradient colors={theme.gradients.brand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
+          <SafeAreaView edges={['top']}>
+            <View style={styles.heroTop}>
+              <View style={styles.logoRow}>
+                <LogoMark size={s(40)} />
+                <View>
+                  <Wordmark size={ms(19)} light />
+                  <Text style={styles.heroTagline}>Ehtiyot qismlar bozori</Text>
+                </View>
               </View>
+              <Pressable
+                style={({ pressed }) => [styles.notifBtn, pressed && { opacity: 0.8 }]}
+                onPress={() => router.push('/messages')}
+              >
+                <Ionicons name="notifications-outline" size={ms(20)} color="#fff" />
+              </Pressable>
             </View>
+
+            <Text style={styles.heroTitle}>Kerakli detalni{'\n'}tez va ishonchli toping</Text>
+
             <Pressable
-              style={({ pressed }) => [styles.notifBtn, pressed && { opacity: 0.8 }]}
-              onPress={() => router.push('/messages')}
+              style={({ pressed }) => [styles.searchBar, { backgroundColor: colors.card }, pressed && { opacity: 0.96 }]}
+              onPress={() => router.push('/search')}
             >
-              <Ionicons name="notifications-outline" size={ms(20)} color="#fff" />
+              <View style={[styles.searchIcon, { backgroundColor: colors.primarySoft }]}>
+                <Ionicons name="search" size={ms(17)} color={colors.primary} />
+              </View>
+              <Text style={[styles.searchText, { color: colors.muted }]}>Detal, OEM yoki mashina...</Text>
+              <View style={[styles.searchArrow, { backgroundColor: colors.surface }]}>
+                <Ionicons name="arrow-forward" size={ms(15)} color={colors.muted} />
+              </View>
             </Pressable>
-          </View>
+          </SafeAreaView>
+        </LinearGradient>
 
-          <Text style={styles.heroTitle}>Kerakli detalni{'\n'}tez va ishonchli toping</Text>
-
-          <Pressable
-            style={({ pressed }) => [styles.searchBar, { backgroundColor: colors.card }, pressed && { opacity: 0.96 }]}
-            onPress={() => router.push('/search')}
-          >
-            <View style={[styles.searchIcon, { backgroundColor: colors.primarySoft }]}>
-              <Ionicons name="search" size={ms(17)} color={colors.primary} />
-            </View>
-            <Text style={[styles.searchText, { color: colors.muted }]}>Detal, OEM yoki mashina...</Text>
-            <View style={[styles.searchArrow, { backgroundColor: colors.surface }]}>
-              <Ionicons name="arrow-forward" size={ms(15)} color={colors.muted} />
-            </View>
-          </Pressable>
-        </SafeAreaView>
-      </LinearGradient>
-
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {brands && brands.length > 0 && (
           <View>
             <SectionHeader title="Ommabop brendlar" colors={colors} />
