@@ -46,7 +46,7 @@ export async function registerForPush(): Promise<string | null> {
     const projectId: string =
       (Constants.expoConfig?.extra?.eas?.projectId as string | undefined)
       ?? Constants.easConfig?.projectId
-      ?? '204db17c-cd95-46b5-a16a-b668480776b0';
+      ?? 'd329bab0-e7ac-4ec0-a5e4-c06806ae69ae';
 
     const resp = await Notifications.getExpoPushTokenAsync({ projectId });
     const token = resp.data;

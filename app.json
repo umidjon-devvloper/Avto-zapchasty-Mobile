@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "icon": "./assets/icon.png",
-      "bundleIdentifier": "com.umidjon.umidjon"
+      "bundleIdentifier": "com.zapchasty.zapchasty"
     },
     "android": {
       "package": "uz.autoparts.app",
@@ -62,9 +62,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "204db17c-cd95-46b5-a16a-b668480776b0"
+        "projectId": "d329bab0-e7ac-4ec0-a5e4-c06806ae69ae"
       }
     },
-    "owner": "gouzbekistan"
+    "owner": "zapchasty"
   }
 }
