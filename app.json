@@ -19,6 +19,7 @@
     },
     "android": {
       "package": "com.zapchasty.zapchasty",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#172a6b"

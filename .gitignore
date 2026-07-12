@@ -12,3 +12,5 @@ credentials.json
 *.mobileprovision
 *.jks
 *.keystore
+*firebase-adminsdk*.json
+*service-account*.json

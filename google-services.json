@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "801010936772",
+    "project_id": "zapchasty-7f8ec",
+    "storage_bucket": "zapchasty-7f8ec.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:801010936772:android:cf00f0bc2c6956cca11291",
+        "android_client_info": {
+          "package_name": "com.zapchasty.zapchasty"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxRnxUnUTw1LxkczKQrUPvfSX5Xuecqt4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
