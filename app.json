@@ -18,7 +18,7 @@
       }
     },
     "android": {
-      "package": "uz.autoparts.app",
+      "package": "com.zapchasty.zapchasty",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#172a6b"

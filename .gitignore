@@ -4,3 +4,11 @@ dist/
 .env
 *.log
 .DS_Store
+
+# Maxfiy kalitlar — hech qachon git'ga tushmasin
+credentials.json
+*.p8
+*.p12
+*.mobileprovision
+*.jks
+*.keystore
