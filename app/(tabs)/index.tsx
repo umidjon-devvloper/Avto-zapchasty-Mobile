@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
-import { ScrollView, View, Text, Pressable, StyleSheet, FlatList, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
-import { useCallback, useRef } from 'react';
+import { ScrollView, View, Text, Pressable, StyleSheet, FlatList, NativeSyntheticEvent, NativeScrollEvent, RefreshControl } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { setStatusBarStyle } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { api } from '../../src/lib/api';
+import { useT, useLocalize } from '../../src/lib/i18n';
 import { useColors, useScheme } from '../../src/theme/useColors';
 import { theme, s, ms } from '../../src/theme';
 import { Wordmark, LogoMark } from '../../src/components/Brand';
@@ -24,6 +25,7 @@ function chunk<T>(arr: T[], n: number): T[][] {
 function CategoryRow({ categories }: { categories: PartCategory[] }) {
   const colors = useColors();
   const scheme = useScheme();
+  const lz = useLocalize();
   // Ikki tonli premium sxema — navy va amber (accent) almashib turadi
   const tones = scheme === 'dark'
     ? [
@@ -53,14 +55,14 @@ function CategoryRow({ categories }: { categories: PartCategory[] }) {
               pressed && { opacity: 0.82, transform: [{ scale: 0.95 }] },
             ]}
             onPress={() =>
-              router.push({ pathname: '/category/[id]', params: { id: c._id, name: c.name.uz || c.name.ru, slug: c.slug } })
+              router.push({ pathname: '/category/[id]', params: { id: c._id, name: lz(c.name), slug: c.slug } })
             }
           >
             <LinearGradient colors={tone.grad} style={styles.catIconWrap}>
-              <Ionicons name={categoryIcon(c.slug)} size={ms(28)} color={tone.icon} />
+              <Ionicons name={categoryIcon(c.slug)} size={ms(22)} color={tone.icon} />
             </LinearGradient>
             <Text numberOfLines={2} style={[styles.catName, { color: colors.text }]}>
-              {c.name.uz || c.name.ru}
+              {lz(c.name)}
             </Text>
           </Pressable>
         );
@@ -71,14 +73,25 @@ function CategoryRow({ categories }: { categories: PartCategory[] }) {
 
 export default function Home() {
   const colors = useColors();
-  const { data: categories, isLoading } = useQuery({ queryKey: ['categories'], queryFn: api.categories });
-  const { data: brands } = useQuery({ queryKey: ['brands-popular'], queryFn: () => api.brands(true) });
-  const { data: latest, isLoading: latestLoading } = useQuery({
+  const t = useT();
+  const { data: categories, isLoading, refetch: refetchCategories } = useQuery({ queryKey: ['categories'], queryFn: api.categories });
+  const { data: brands, refetch: refetchBrands } = useQuery({ queryKey: ['brands-popular'], queryFn: () => api.brands(true) });
+  const { data: latest, isLoading: latestLoading, refetch: refetchLatest } = useQuery({
     queryKey: ['latest-listings'],
     queryFn: () => api.search({ sort: 'newest', limit: 10, page: 1 }),
   });
 
   const latestItems = latest?.items ?? [];
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([refetchCategories(), refetchBrands(), refetchLatest()]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetchCategories, refetchBrands, refetchLatest]);
 
   const scrolledPastHero = useRef(false);
 
@@ -103,6 +116,15 @@ export default function Home() {
         showsVerticalScrollIndicator={false}
         onScroll={onScroll}
         scrollEventThrottle={32}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#fff"
+            colors={[theme.colors.brand]}
+            progressBackgroundColor="#fff"
+          />
+        }
       >
         <LinearGradient colors={theme.gradients.brand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
           <SafeAreaView edges={['top']}>
@@ -111,7 +133,7 @@ export default function Home() {
                 <LogoMark size={s(40)} />
                 <View>
                   <Wordmark size={ms(19)} light />
-                  <Text style={styles.heroTagline}>Ehtiyot qismlar bozori</Text>
+                  <Text style={styles.heroTagline}>{t.home.tagline}</Text>
                 </View>
               </View>
               <Pressable
@@ -122,7 +144,7 @@ export default function Home() {
               </Pressable>
             </View>
 
-            <Text style={styles.heroTitle}>Kerakli detalni{'\n'}tez va ishonchli toping</Text>
+            <Text style={styles.heroTitle}>{t.home.heroTitle}</Text>
 
             <Pressable
               style={({ pressed }) => [styles.searchBar, { backgroundColor: colors.card }, pressed && { opacity: 0.96 }]}
@@ -131,7 +153,7 @@ export default function Home() {
               <View style={[styles.searchIcon, { backgroundColor: colors.primarySoft }]}>
                 <Ionicons name="search" size={ms(17)} color={colors.primary} />
               </View>
-              <Text style={[styles.searchText, { color: colors.muted }]}>Detal, OEM yoki mashina...</Text>
+              <Text style={[styles.searchText, { color: colors.muted }]}>{t.home.searchPlaceholder}</Text>
               <View style={[styles.searchArrow, { backgroundColor: colors.surface }]}>
                 <Ionicons name="arrow-forward" size={ms(15)} color={colors.muted} />
               </View>
@@ -141,7 +163,7 @@ export default function Home() {
 
         {brands && brands.length > 0 && (
           <View>
-            <SectionHeader title="Ommabop brendlar" colors={colors} />
+            <SectionHeader title={t.home.popularBrands} colors={colors} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.brandRow}>
               {brands.map((b: Brand) => (
                 <Pressable
@@ -162,8 +184,8 @@ export default function Home() {
 
         <View>
           <SectionHeader
-            title="Kategoriyalar"
-            actionLabel="Barchasi"
+            title={t.home.categories}
+            actionLabel={t.home.viewAll}
             onAction={() => router.push('/search')}
             colors={colors}
           />
@@ -176,15 +198,15 @@ export default function Home() {
 
         <View>
           <SectionHeader
-            title="So'nggi e'lonlar"
-            actionLabel="Barchasi"
+            title={t.home.latest}
+            actionLabel={t.home.viewAll}
             onAction={() => router.push('/search')}
             colors={colors}
           />
           {latestLoading ? (
             <Loading />
           ) : latestItems.length === 0 ? (
-            <Text style={[styles.emptyHint, { color: colors.muted }]}>Hozircha e'lonlar yo'q</Text>
+            <Text style={[styles.emptyHint, { color: colors.muted }]}>{t.home.noListings}</Text>
           ) : (
             <View style={styles.feed}>
               {chunk<Listing>(latestItems, 2).map((row, i) => (
@@ -264,20 +286,20 @@ const styles = StyleSheet.create({
 
   catRow: { paddingHorizontal: s(16), paddingVertical: s(4) },
   catCard: {
-    width: s(96),
+    width: s(88),
     borderRadius: theme.radius.xl,
     borderWidth: 1,
-    paddingVertical: s(14),
+    paddingVertical: s(10),
     paddingHorizontal: s(6),
     alignItems: 'center',
-    gap: s(10),
+    gap: s(6),
     ...theme.shadow.sm,
   },
   catIconWrap: {
-    width: s(56), height: s(56), borderRadius: theme.radius.lg,
+    width: s(44), height: s(44), borderRadius: theme.radius.lg,
     alignItems: 'center', justifyContent: 'center',
   },
-  catName: { fontSize: ms(11.5), fontWeight: '700', textAlign: 'center', lineHeight: ms(15) },
+  catName: { fontSize: ms(11), fontWeight: '700', textAlign: 'center', lineHeight: ms(14) },
 
   sectionHead: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

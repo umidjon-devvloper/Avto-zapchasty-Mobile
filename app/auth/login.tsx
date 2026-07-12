@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { api, errMessage } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
+import { useT } from '../../src/lib/i18n';
 import { useColors } from '../../src/theme/useColors';
 import { theme, s, ms, isSmall } from '../../src/theme';
 import { Button } from '../../src/components/Button';
@@ -56,6 +57,7 @@ function Field({
 export default function Login() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
+  const t = useT();
   const setSession = useAuth((st) => st.setSession);
   const params = useLocalSearchParams<{ mode?: string }>();
   const [mode, setMode] = useState<Mode>(params.mode === 'register' ? 'register' : 'login');
@@ -78,7 +80,7 @@ export default function Login() {
       if (router.canGoBack()) router.back();
       else router.replace('/(tabs)');
     } catch (e) {
-      Alert.alert('Xatolik', errMessage(e));
+      Alert.alert(t.common.error, errMessage(e));
     } finally {
       setBusy(false);
     }
@@ -113,7 +115,7 @@ export default function Login() {
                 <LogoMark size={isSmall ? 40 : 48} />
               </View>
               <Wordmark size={ms(24)} light style={{ marginTop: s(12) }} />
-              <Text style={styles.heroSub}>Ehtiyot qismlar bozori</Text>
+              <Text style={styles.heroSub}>{t.home.tagline}</Text>
             </View>
           </LinearGradient>
 
@@ -124,7 +126,7 @@ export default function Login() {
                 onPress={() => setMode('login')}
               >
                 <Text style={[styles.segText, { color: colors.muted }, !isRegister && { color: colors.ink, fontWeight: '800' }]} numberOfLines={1}>
-                  Kirish
+                  {t.auth.loginShort}
                 </Text>
               </Pressable>
               <Pressable
@@ -132,26 +134,26 @@ export default function Login() {
                 onPress={() => setMode('register')}
               >
                 <Text style={[styles.segText, { color: colors.muted }, isRegister && { color: colors.ink, fontWeight: '800' }]} numberOfLines={1}>
-                  Ro'yxatdan o'tish
+                  {t.auth.register}
                 </Text>
               </Pressable>
             </View>
 
             <Text style={[styles.greeting, { color: colors.text }]}>
-              {isRegister ? 'Xush kelibsiz!' : 'Qaytganingizdan xursandmiz!'}
+              {isRegister ? t.auth.welcomeRegister : t.auth.welcomeLogin}
             </Text>
             <Text style={[styles.greetingSub, { color: colors.muted }]}>
-              {isRegister ? "Ro'yxatdan o'tish uchun ma'lumotlaringizni kiriting" : 'Davom etish uchun hisobingizga kiring'}
+              {isRegister ? t.auth.subRegister : t.auth.subLogin}
             </Text>
 
             <View style={styles.fields}>
               {isRegister && (
-                <Field icon="person-outline" label="Ismingiz" value={name} onChangeText={setName} placeholder="Ism (ixtiyoriy)" />
+                <Field icon="person-outline" label={t.auth.nameLabel} value={name} onChangeText={setName} placeholder={t.auth.namePlaceholder} />
               )}
-              <Field icon="call-outline" label="Telefon raqam" value={phone} onChangeText={setPhone} placeholder="+998 90 123 45 67" keyboardType="phone-pad" />
+              <Field icon="call-outline" label={t.auth.phoneLabel} value={phone} onChangeText={setPhone} placeholder="+998 90 123 45 67" keyboardType="phone-pad" />
               <Field
-                icon="lock-closed-outline" label="Parol" value={password} onChangeText={setPassword}
-                placeholder="Kamida 4 ta belgi" secure={!showPass}
+                icon="lock-closed-outline" label={t.auth.passwordLabel} value={password} onChangeText={setPassword}
+                placeholder={t.auth.passwordPlaceholder} secure={!showPass}
                 rightSlot={
                   <Pressable onPress={() => setShowPass(!showPass)} hitSlop={10}>
                     <Ionicons name={showPass ? 'eye-outline' : 'eye-off-outline'} size={ms(20)} color={colors.faint} />
@@ -160,19 +162,19 @@ export default function Login() {
               />
             </View>
 
-            <Button title={isRegister ? "Ro'yxatdan o'tish" : 'Kirish'} onPress={submit} loading={busy} disabled={!canSubmit} style={styles.submitBtn} />
+            <Button title={isRegister ? t.auth.register : t.auth.loginShort} onPress={submit} loading={busy} disabled={!canSubmit} style={styles.submitBtn} />
 
             <View style={styles.divider}>
               <View style={[styles.dividerLine, { backgroundColor: colors.hairline }]} />
-              <Text style={[styles.dividerText, { color: colors.faint }]}>yoki</Text>
+              <Text style={[styles.dividerText, { color: colors.faint }]}>{t.auth.or}</Text>
               <View style={[styles.dividerLine, { backgroundColor: colors.hairline }]} />
             </View>
 
             <Pressable style={({ pressed }) => [styles.switchBtn, pressed && { opacity: 0.6 }]} onPress={() => setMode(isRegister ? 'login' : 'register')}>
               <Text style={[styles.switchText, { color: colors.muted }]}>
-                {isRegister ? 'Hisobingiz bormi? ' : "Hisobingiz yo'qmi? "}
+                {isRegister ? t.auth.haveAccount : t.auth.noAccount}
                 <Text style={{ color: colors.ink, fontWeight: '800' }}>
-                  {isRegister ? 'Kirish' : "Ro'yxatdan o'tish"}
+                  {isRegister ? t.auth.loginShort : t.auth.register}
                 </Text>
               </Text>
             </Pressable>
@@ -180,9 +182,9 @@ export default function Login() {
 
           <View style={styles.trust}>
             {[
-              { icon: 'shield-checkmark-outline' as const, label: 'Xavfsiz' },
-              { icon: 'lock-closed-outline' as const, label: 'Himoyalangan' },
-              { icon: 'flash-outline' as const, label: 'Tez kirish' },
+              { icon: 'shield-checkmark-outline' as const, label: t.auth.trustSafe },
+              { icon: 'lock-closed-outline' as const, label: t.auth.trustSecure },
+              { icon: 'flash-outline' as const, label: t.auth.trustFast },
             ].map((b) => (
               <View key={b.label} style={styles.trustItem}>
                 <Ionicons name={b.icon} size={ms(15)} color={colors.ink} />

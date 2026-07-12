@@ -57,6 +57,14 @@ export interface User {
 export interface Paginated<T> { items: T[]; total: number; page: number; pages: number }
 export interface Suggestion { _id: string; name: string; slug: string; categoryId: string }
 
+export interface SellerPublicProfile {
+  _id: string;
+  name: string;
+  createdAt: string;
+  activeListings: number;
+  sellerProfile?: { shopName: string; city: string; verified: boolean };
+}
+
 export interface ChatMessage {
   _id: string;
   conversationId: string;

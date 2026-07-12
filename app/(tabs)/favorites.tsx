@@ -1,3 +1,4 @@
+import { useCallback, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { View, Text, ScrollView, StyleSheet, Pressable, RefreshControl, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
+import { useT } from '../../src/lib/i18n';
 import { useColors } from '../../src/theme/useColors';
 import { theme, s, ms } from '../../src/theme';
 import { ListingCard } from '../../src/components/ListingCard';
@@ -21,14 +23,21 @@ function chunk<T>(arr: T[], n: number): T[][] {
 
 export default function Favorites() {
   const colors = useColors();
+  const t = useT();
   const token = useAuth((s) => s.accessToken);
-  const { data, isLoading, refetch, isRefetching } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['favorites'],
     queryFn: api.favorites,
     enabled: !!token,
   });
 
-  if (!token) return <AuthPrompt text="Saralangan e'lonlarni ko'rish uchun tizimga kiring" />;
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try { await refetch(); } finally { setRefreshing(false); }
+  }, [refetch]);
+
+  if (!token) return <AuthPrompt text={t.favorites.loginPrompt} />;
 
   const items = data ?? [];
 
@@ -40,9 +49,9 @@ export default function Favorites() {
         <SafeAreaView edges={['top']}>
           <View style={styles.headerRow}>
             <View>
-              <Text style={styles.headerTitle}>Saralangan</Text>
+              <Text style={styles.headerTitle}>{t.favorites.title}</Text>
               <Text style={styles.headerSub}>
-                {items.length > 0 ? `${items.length} ta saqlangan e'lon` : 'Yoqtirgan e\'lonlaringiz'}
+                {items.length > 0 ? t.favorites.savedN(items.length) : t.favorites.subtitle}
               </Text>
             </View>
             {items.length > 0 && (
@@ -60,7 +69,7 @@ export default function Favorites() {
       ) : items.length === 0 ? (
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.brand} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
         >
           <EmptyFavorites colors={colors} />
         </ScrollView>
@@ -68,7 +77,7 @@ export default function Favorites() {
         <ScrollView
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.brand} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
         >
           {chunk<Listing>(items, 2).map((row, i) => (
             <View key={i} style={styles.row}>
@@ -83,19 +92,18 @@ export default function Favorites() {
 }
 
 function EmptyFavorites({ colors }: { colors: ReturnType<typeof useColors> }) {
+  const t = useT();
   return (
     <View style={styles.empty}>
       <LinearGradient colors={[colors.dangerSoft, colors.dangerSoft + 'cc']} style={styles.emptyIconWrap}>
         <Ionicons name="heart-outline" size={ms(44)} color={colors.danger} />
       </LinearGradient>
-      <Text style={[styles.emptyTitle, { color: colors.text }]}>Hali hech narsa yo'q</Text>
-      <Text style={[styles.emptyText, { color: colors.muted }]}>
-        Yoqqan e'lonlarni yurakcha belgisi bilan saqlang — ular shu yerda paydo bo'ladi
-      </Text>
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>{t.favorites.emptyTitle}</Text>
+      <Text style={[styles.emptyText, { color: colors.muted }]}>{t.favorites.emptyText}</Text>
       <Pressable style={({ pressed }) => [styles.browseBtn, pressed && { opacity: 0.88 }]} onPress={() => router.push('/search')}>
         <LinearGradient colors={theme.gradients.brand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.browseFill}>
           <Ionicons name="search" size={ms(17)} color="#fff" />
-          <Text style={styles.browseText}>E'lonlarni ko'rish</Text>
+          <Text style={styles.browseText}>{t.favorites.browse}</Text>
         </LinearGradient>
       </Pressable>
     </View>

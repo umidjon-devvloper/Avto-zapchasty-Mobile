@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
+import { useT } from '../../src/lib/i18n';
 import { useColors } from '../../src/theme/useColors';
 import { theme, s, ms } from '../../src/theme';
 import type { ConversationItem } from '../../src/lib/types';
@@ -41,6 +42,7 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const token = useAuth((st) => st.accessToken);
   const colors = useColors();
+  const t = useT();
   const { data } = useQuery({
     queryKey: ['conversations'],
     queryFn: api.conversations,
@@ -89,7 +91,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Bosh sahifa',
+          title: t.tabs.home,
           tabBarIcon: ({ color, size, focused }) => (
             <TabIcon base="home" color={color} size={size} focused={focused} />
           ),
@@ -98,7 +100,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Qidiruv',
+          title: t.tabs.search,
           tabBarIcon: ({ color, size, focused }) => (
             <TabIcon base="search" color={color} size={size} focused={focused} />
           ),
@@ -107,7 +109,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="messages"
         options={{
-          title: 'Xabarlar',
+          title: t.tabs.messages,
           tabBarBadge: unread > 0 ? unread : undefined,
           tabBarIcon: ({ color, size, focused }) => (
             <TabIcon base="chatbubbles" color={color} size={size} focused={focused} badge={unread} />
@@ -117,7 +119,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="favorites"
         options={{
-          title: 'Saralangan',
+          title: t.tabs.favorites,
           tabBarIcon: ({ color, size, focused }) => (
             <TabIcon base="heart" color={color} size={size} focused={focused} />
           ),
@@ -126,7 +128,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profil',
+          title: t.tabs.profile,
           tabBarIcon: ({ color, size, focused }) => (
             <TabIcon base="person" color={color} size={size} focused={focused} />
           ),

@@ -8,15 +8,8 @@ import { useFocusEffect, router } from 'expo-router';
 import { useNotificationStore, type AppNotification } from '../src/lib/notificationStore';
 import { useColors } from '../src/theme/useColors';
 import { theme, s, ms } from '../src/theme';
+import { useT, timeAgoT } from '../src/lib/i18n';
 import { EmptyState } from '../src/components/EmptyState';
-
-function timeAgo(iso: string): string {
-  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (diff < 60) return 'Hozirgina';
-  if (diff < 3600) return `${Math.floor(diff / 60)} daqiqa oldin`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} soat oldin`;
-  return `${Math.floor(diff / 86400)} kun oldin`;
-}
 
 function NotifIcon({ data }: { data?: Record<string, unknown> }) {
   const colors = useColors();
@@ -40,6 +33,7 @@ function NotifIcon({ data }: { data?: Record<string, unknown> }) {
 
 export default function NotificationsScreen() {
   const colors = useColors();
+  const t = useT();
   const { notifications, markAllRead, markRead, clear } = useNotificationStore();
   const unread = notifications.filter((n) => !n.read).length;
 
@@ -71,9 +65,9 @@ export default function NotificationsScreen() {
         <SafeAreaView edges={['top']}>
           <View style={styles.headerRow}>
             <View>
-              <Text style={styles.headerTitle}>Bildirishnomalar</Text>
+              <Text style={styles.headerTitle}>{t.notifications.title}</Text>
               {unread > 0 && (
-                <Text style={styles.headerSub}>{unread} ta yangi</Text>
+                <Text style={styles.headerSub}>{t.notifications.newN(unread)}</Text>
               )}
             </View>
             {notifications.length > 0 && (
@@ -82,7 +76,7 @@ export default function NotificationsScreen() {
                 onPress={clear}
                 hitSlop={8}
               >
-                <Text style={styles.clearText}>Tozalash</Text>
+                <Text style={styles.clearText}>{t.notifications.clear}</Text>
               </Pressable>
             )}
           </View>
@@ -95,7 +89,7 @@ export default function NotificationsScreen() {
         contentContainerStyle={[styles.list, notifications.length === 0 && { flex: 1 }]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <EmptyState icon="notifications-off-outline" text="Hali bildirishnoma yo'q" />
+          <EmptyState icon="notifications-off-outline" text={t.notifications.empty} />
         }
         renderItem={({ item: n }) => (
           <Pressable
@@ -117,7 +111,7 @@ export default function NotificationsScreen() {
                   {n.body}
                 </Text>
               )}
-              <Text style={[styles.time, { color: colors.faint }]}>{timeAgo(n.receivedAt)}</Text>
+              <Text style={[styles.time, { color: colors.faint }]}>{timeAgoT(n.receivedAt, t)}</Text>
             </View>
             {!n.read && <View style={[styles.dot, { backgroundColor: colors.primary }]} />}
           </Pressable>

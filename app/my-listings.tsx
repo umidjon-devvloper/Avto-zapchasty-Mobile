@@ -1,3 +1,4 @@
+import { useCallback, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { FlatList, View, Text, Pressable, StyleSheet, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,10 +7,10 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { api } from '../src/lib/api';
+import { useT, formatPriceT } from '../src/lib/i18n';
 import { useColors } from '../src/theme/useColors';
-import { theme, STATUS_LABELS, s, ms } from '../src/theme';
+import { theme, s, ms } from '../src/theme';
 import { resolveImage } from '../src/lib/image';
-import { formatPrice } from '../src/lib/format';
 import { Badge } from '../src/components/Badge';
 import { Loading } from '../src/components/Loading';
 import { EmptyState } from '../src/components/EmptyState';
@@ -17,10 +18,17 @@ import { EmptyState } from '../src/components/EmptyState';
 
 export default function MyListings() {
   const colors = useColors();
-  const { data, isLoading, refetch, isRefetching } = useQuery({
+  const t = useT();
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['my-listings'],
     queryFn: () => api.myListings({ limit: 50 }),
   });
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try { await refetch(); } finally { setRefreshing(false); }
+  }, [refetch]);
 
   const items = data?.items ?? [];
   const activeCount = items.filter((i: any) => i.status === 'active').length;
@@ -36,8 +44,8 @@ export default function MyListings() {
               <Ionicons name="arrow-back" size={ms(20)} color="#fff" />
             </Pressable>
             <View style={styles.headerCenter}>
-              <Text style={styles.headerTitle}>Mening e'lonlarim</Text>
-              {activeCount > 0 && <Text style={styles.headerSub}>{activeCount} ta faol e'lon</Text>}
+              <Text style={styles.headerTitle}>{t.myListings.title}</Text>
+              {activeCount > 0 && <Text style={styles.headerSub}>{t.myListings.activeN(activeCount)}</Text>}
             </View>
             <Pressable style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.8 }]} onPress={() => router.push('/create-listing')}>
               <Ionicons name="add" size={ms(22)} color="#fff" />
@@ -47,9 +55,9 @@ export default function MyListings() {
           {items.length > 0 && (
             <View style={styles.statsStrip}>
               {[
-                { key: 'active', label: 'Faol' },
-                { key: 'pending', label: 'Tekshiruvda' },
-                { key: 'sold', label: 'Sotilgan' },
+                { key: 'active', label: t.myListings.statActive },
+                { key: 'pending', label: t.myListings.statPending },
+                { key: 'sold', label: t.myListings.statSold },
               ].map((s) => {
                 const cnt = items.filter((i: any) => i.status === s.key).length;
                 return (
@@ -91,9 +99,9 @@ export default function MyListings() {
 
                 <View style={styles.info}>
                   <Text numberOfLines={2} style={[styles.title, { color: colors.text }]}>{item.title}</Text>
-                  <Text style={[styles.price, { color: colors.ink }]}>{formatPrice(item.price.amount, item.price.currency)}</Text>
+                  <Text style={[styles.price, { color: colors.ink }]}>{formatPriceT(item.price.amount, item.price.currency, t)}</Text>
                   <View style={styles.bottomRow}>
-                    <Badge label={STATUS_LABELS[item.status] || item.status} tone={tone} />
+                    <Badge label={t.statuses[item.status as keyof typeof t.statuses] || item.status} tone={tone} />
                     {item.views != null && (
                       <View style={styles.viewRow}>
                         <Ionicons name="eye-outline" size={ms(12)} color={colors.faint} />
@@ -110,17 +118,17 @@ export default function MyListings() {
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             <View style={styles.emptyWrap}>
-              <EmptyState icon="pricetags-outline" text="Hali e'lon bermagansiz" />
+              <EmptyState icon="pricetags-outline" text={t.myListings.empty} />
               <Pressable style={({ pressed }) => [styles.createBtn, pressed && { opacity: 0.85 }]} onPress={() => router.push('/create-listing')}>
                 <LinearGradient colors={theme.gradients.primary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.createFill}>
                   <Ionicons name="add-circle-outline" size={ms(18)} color="#fff" />
-                  <Text style={styles.createText}>Birinchi e'lonni berish</Text>
+                  <Text style={styles.createText}>{t.myListings.createFirst}</Text>
                 </LinearGradient>
               </Pressable>
             </View>
           }
-          refreshing={isRefetching}
-          onRefresh={refetch}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
           showsVerticalScrollIndicator={false}
         />
       )}

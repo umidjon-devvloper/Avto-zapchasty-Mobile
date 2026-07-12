@@ -5,17 +5,17 @@
       "developmentClient": true,
       "distribution": "internal",
       "android": { "buildType": "apk" },
-      "env": { "EXPO_PUBLIC_API_URL": "https://avto-zapchasty-backend-production.up.railway.app/api" }
+      "environment": "development"
     },
     "preview": {
       "distribution": "internal",
       "android": { "buildType": "apk" },
-      "env": { "EXPO_PUBLIC_API_URL": "https://avto-zapchasty-backend-production.up.railway.app/api" }
+      "environment": "preview"
     },
     "production": {
       "autoIncrement": true,
       "android": { "buildType": "app-bundle" },
-      "env": { "EXPO_PUBLIC_API_URL": "https://avto-zapchasty-backend-production.up.railway.app/api" }
+      "environment": "production"
     }
   },
   "submit": { "production": {} }

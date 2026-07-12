@@ -13,8 +13,9 @@ import { useState } from 'react';
 import { api, errMessage } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
 import { useColors } from '../../src/theme/useColors';
-import { theme, s, ms, CONDITION_LABELS, REPORT_REASONS } from '../../src/theme';
-import { formatPrice, formatDate } from '../../src/lib/format';
+import { theme, s, ms } from '../../src/theme';
+import { useT, formatPriceT } from '../../src/lib/i18n';
+import { formatDate } from '../../src/lib/format';
 import { resolveImage } from '../../src/lib/image';
 import { Loading } from '../../src/components/Loading';
 
@@ -25,6 +26,16 @@ export default function ListingDetail() {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const colors = useColors();
+  const t = useT();
+  const REPORT_REASONS = [
+    { value: 'spam', label: t.reportReasons.spam },
+    { value: 'fraud', label: t.reportReasons.fraud },
+    { value: 'prohibited', label: t.reportReasons.prohibited },
+    { value: 'wrong_category', label: t.reportReasons.wrong_category },
+    { value: 'duplicate', label: t.reportReasons.duplicate },
+    { value: 'offensive', label: t.reportReasons.offensive },
+    { value: 'other', label: t.reportReasons.other },
+  ];
   const token = useAuth((s) => s.accessToken);
   const { data, isLoading } = useQuery({ queryKey: ['listing', id], queryFn: () => api.getListing(id) });
   const [fav, setFav] = useState<boolean | null>(null);
@@ -52,25 +63,25 @@ export default function ListingDetail() {
 
   const onFavorite = () => { if (!token) { router.push('/auth/login'); return; } toggle.mutate(); };
   const onCall = async () => {
-    if (!phone) { Alert.alert('Telefon raqami ko\'rsatilmagan'); return; }
+    if (!phone) { Alert.alert(t.listing.noPhoneAlert); return; }
     const url = `tel:${phone}`;
     if (await Linking.canOpenURL(url)) await Linking.openURL(url);
-    else Alert.alert('Qo\'ng\'iroq qilib bo\'lmadi', `Raqam: ${phone}`);
+    else Alert.alert(t.listing.callFailed, `${t.listing.phoneWord}: ${phone}`);
   };
   const onWrite = async () => {
     if (!token) { router.push('/auth/login'); return; }
-    if (l.sellerId && myId && l.sellerId._id === myId) { Alert.alert("Bu sizning e'loningiz"); return; }
+    if (l.sellerId && myId && l.sellerId._id === myId) { Alert.alert(t.listing.ownListing); return; }
     setStarting(true);
     try { const cid = await api.startConversation(l._id); router.push(`/chat/${cid}`); }
-    catch (e) { Alert.alert('Xatolik', errMessage(e)); }
+    catch (e) { Alert.alert(t.common.error, errMessage(e)); }
     finally { setStarting(false); }
   };
   const openReport = () => { if (!token) { router.push('/auth/login'); return; } setReportReason(''); setReportComment(''); setReportOpen(true); };
   const submitReport = async () => {
     if (!reportReason) return;
     setReportSending(true);
-    try { await api.report(l._id, reportReason, reportComment); setReportOpen(false); Alert.alert('Rahmat', "Shikoyatingiz yuborildi. Administratorlar ko'rib chiqadi."); }
-    catch (e) { Alert.alert('Xatolik', errMessage(e)); }
+    try { await api.report(l._id, reportReason, reportComment); setReportOpen(false); Alert.alert(t.listing.reportThanksTitle, t.listing.reportThanksText); }
+    catch (e) { Alert.alert(t.common.error, errMessage(e)); }
     finally { setReportSending(false); }
   };
   const onPhotoScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -85,9 +96,9 @@ export default function ListingDetail() {
       <ScrollView contentContainerStyle={{ paddingBottom: s(28) }} showsVerticalScrollIndicator={false}>
         <View style={{ height: heroH, backgroundColor: colors.brandDark }}>
           {photos.length > 0 ? (
-            <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} onMomentumScrollEnd={onPhotoScroll} scrollEventThrottle={16}>
+            <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} onMomentumScrollEnd={onPhotoScroll} scrollEventThrottle={16} style={{ backgroundColor: colors.brandDark }}>
               {photos.map((p: string, i: number) => (
-                <Image key={i} source={{ uri: resolveImage(p) }} style={{ width, height: heroH }} contentFit="cover" transition={160} />
+                <Image key={i} source={{ uri: resolveImage(p) }} style={{ width, height: heroH, backgroundColor: colors.brandDark }} contentFit="cover" transition={160} />
               ))}
             </ScrollView>
           ) : (
@@ -112,35 +123,35 @@ export default function ListingDetail() {
         </View>
 
         <View style={[styles.sheet, { backgroundColor: colors.bg }]}>
-          <Text style={[styles.price, { color: colors.text }]}>{formatPrice(l.price.amount, l.price.currency)}</Text>
+          <Text style={[styles.price, { color: colors.text }]}>{formatPriceT(l.price.amount, l.price.currency, t)}</Text>
           <Text style={[styles.title, { color: colors.inkSoft }]}>{l.title}</Text>
 
           <View style={styles.badgeRow}>
             <View style={[styles.condPill, { backgroundColor: colors.primarySoft }]}>
               <Ionicons name="pricetag" size={ms(12)} color={colors.primaryDark} />
-              <Text style={[styles.condPillText, { color: colors.primaryDark }]}>{CONDITION_LABELS[l.condition] || l.condition}</Text>
+              <Text style={[styles.condPillText, { color: colors.primaryDark }]}>{t.conditions[l.condition as keyof typeof t.conditions] || l.condition}</Text>
             </View>
             {l.delivery ? (
               <View style={[styles.tagPill, { backgroundColor: colors.successSoft }]}>
                 <Ionicons name="cube-outline" size={ms(12)} color={colors.success} />
-                <Text style={[styles.tagPillText, { color: colors.success }]}>Yetkazib berish</Text>
+                <Text style={[styles.tagPillText, { color: colors.success }]}>{t.listing.delivery}</Text>
               </View>
             ) : null}
           </View>
 
           <View style={[styles.statsRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Stat icon="eye-outline" label="Ko'rishlar" value={String(l.views)} colors={colors} />
+            <Stat icon="eye-outline" label={t.listing.views} value={String(l.views)} colors={colors} />
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-            <Stat icon="location-outline" label="Shahar" value={l.city || '—'} colors={colors} />
+            <Stat icon="location-outline" label={t.listing.city} value={l.city || '—'} colors={colors} />
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-            <Stat icon="time-outline" label="Sana" value={formatDate(l.createdAt)} colors={colors} />
+            <Stat icon="time-outline" label={t.listing.date} value={formatDate(l.createdAt)} colors={colors} />
           </View>
 
           {l.oemNumbers && l.oemNumbers.length > 0 && (
             <View style={[styles.oemBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={styles.oemHead}>
                 <Ionicons name="barcode-outline" size={ms(15)} color={colors.primaryDark} />
-                <Text style={[styles.oemLabel, { color: colors.muted }]}>OEM / Artikul</Text>
+                <Text style={[styles.oemLabel, { color: colors.muted }]}>{t.listing.oem}</Text>
               </View>
               <View style={styles.oemChips}>
                 {l.oemNumbers.map((n: string, i: number) => (
@@ -154,48 +165,54 @@ export default function ListingDetail() {
 
           {(fitment || l.manufacturer || l.partTypeId?.name) && (
             <View style={[styles.specCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Tafsilotlar</Text>
-              {l.partTypeId?.name ? <SpecRow icon="construct-outline" label="Detal turi" value={l.partTypeId.name} colors={colors} /> : null}
-              {l.manufacturer ? <SpecRow icon="business-outline" label="Ishlab chiqaruvchi" value={l.manufacturer} colors={colors} /> : null}
-              {fitment ? <SpecRow icon="car-sport-outline" label="Moslik" value={fitment} last colors={colors} /> : null}
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t.listing.details}</Text>
+              {l.partTypeId?.name ? <SpecRow icon="construct-outline" label={t.listing.partType} value={l.partTypeId.name} colors={colors} /> : null}
+              {l.manufacturer ? <SpecRow icon="business-outline" label={t.listing.manufacturer} value={l.manufacturer} colors={colors} /> : null}
+              {fitment ? <SpecRow icon="car-sport-outline" label={t.listing.fitment} value={fitment} last colors={colors} /> : null}
             </View>
           )}
 
           {l.description ? (
             <View style={styles.descCard}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Tavsif</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t.listing.description}</Text>
               <Text style={[styles.desc, { color: colors.inkSoft }]}>{l.description}</Text>
             </View>
           ) : null}
 
-          <Text style={[styles.sectionTitle, { marginTop: 18, marginBottom: 8, color: colors.text }]}>Sotuvchi</Text>
-          <View style={[styles.seller, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { marginTop: 18, marginBottom: 8, color: colors.text }]}>{t.listing.seller}</Text>
+          <Pressable
+            style={({ pressed }) => [
+              styles.seller,
+              { backgroundColor: colors.card, borderColor: colors.border },
+              pressed && { opacity: 0.88, transform: [{ scale: 0.995 }] },
+            ]}
+            onPress={() => { if (l.sellerId?._id) router.push(`/seller/${l.sellerId._id}`); }}
+          >
             <View style={[styles.sellerAvatar, { backgroundColor: colors.brandSoft }]}>
               <Ionicons name="storefront-outline" size={ms(22)} color={colors.ink} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.sellerName, { color: colors.text }]} numberOfLines={1}>
-                {l.sellerId?.sellerProfile?.shopName || l.sellerId?.name || 'Sotuvchi'}
+                {l.sellerId?.sellerProfile?.shopName || l.sellerId?.name || t.seller.fallback}
               </Text>
-              <Text style={[styles.sellerPhone, { color: colors.muted }]}>{phone || 'Raqam ko\'rsatilmagan'}</Text>
+              <Text style={[styles.sellerPhone, { color: colors.muted }]}>{phone || t.listing.noPhone}</Text>
+              <Text style={[styles.sellerLink, { color: colors.primaryDark }]}>{t.listing.seeAllListings}</Text>
             </View>
-            <View style={[styles.verifiedBadge, { backgroundColor: colors.brandSoft }]}>
-              <Ionicons name="shield-checkmark" size={ms(14)} color={colors.ink} />
-            </View>
-          </View>
+            <Ionicons name="chevron-forward" size={ms(17)} color={colors.faint} />
+          </Pressable>
 
           <Pressable style={({ pressed }) => [styles.reportLink, pressed && { opacity: 0.6 }]} onPress={openReport}>
             <Ionicons name="flag-outline" size={ms(15)} color={colors.muted} />
-            <Text style={[styles.reportText, { color: colors.muted }]}>Shikoyat qilish</Text>
+            <Text style={[styles.reportText, { color: colors.muted }]}>{t.listing.report}</Text>
           </Pressable>
         </View>
       </ScrollView>
 
       <View style={[styles.topBar, { top: insets.top + s(6) }]} pointerEvents="box-none">
-        <Pressable style={({ pressed }) => [styles.circleBtn, pressed && styles.circlePressed]} onPress={() => router.back()} hitSlop={6}>
+        <Pressable style={({ pressed }) => [styles.circleBtn, { backgroundColor: colors.card }, pressed && { backgroundColor: colors.surface, transform: [{ scale: 0.94 }] }]} onPress={() => router.back()} hitSlop={6}>
           <Ionicons name="chevron-back" size={ms(22)} color={colors.text} />
         </Pressable>
-        <Pressable style={({ pressed }) => [styles.circleBtn, pressed && styles.circlePressed]} onPress={onFavorite} hitSlop={6}>
+        <Pressable style={({ pressed }) => [styles.circleBtn, { backgroundColor: colors.card }, pressed && { backgroundColor: colors.surface, transform: [{ scale: 0.94 }] }]} onPress={onFavorite} hitSlop={6}>
           <Ionicons name={isFav ? 'heart' : 'heart-outline'} size={ms(21)} color={isFav ? colors.danger : colors.text} />
         </Pressable>
       </View>
@@ -203,12 +220,12 @@ export default function ListingDetail() {
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, s(12)) + s(8), borderTopColor: colors.border, backgroundColor: colors.card }]}>
         <Pressable style={({ pressed }) => [styles.writeBtn, { borderColor: colors.border, backgroundColor: colors.card }, pressed && { opacity: 0.85 }]} onPress={onWrite} disabled={starting}>
           <Ionicons name="chatbubble-ellipses-outline" size={ms(20)} color={colors.ink} />
-          <Text style={[styles.writeText, { color: colors.ink }]}>Yozish</Text>
+          <Text style={[styles.writeText, { color: colors.ink }]}>{t.listing.write}</Text>
         </Pressable>
         <Pressable style={({ pressed }) => [styles.callBtn, pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] }]} onPress={onCall}>
           <LinearGradient colors={theme.gradients.primary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.callFill}>
             <Ionicons name="call" size={ms(19)} color="#fff" />
-            <Text style={styles.callText}>Qo'ng'iroq</Text>
+            <Text style={styles.callText}>{t.listing.call}</Text>
           </LinearGradient>
         </Pressable>
       </View>
@@ -217,7 +234,7 @@ export default function ListingDetail() {
         <Pressable style={[styles.reportBackdrop, { backgroundColor: colors.overlay }]} onPress={() => setReportOpen(false)} />
         <View style={[styles.reportSheet, { backgroundColor: colors.bg }]}>
           <View style={[styles.sheetHandle, { backgroundColor: colors.border }]} />
-          <Text style={[styles.reportTitle, { color: colors.text }]}>Shikoyat sababi</Text>
+          <Text style={[styles.reportTitle, { color: colors.text }]}>{t.listing.reportTitle}</Text>
           <View style={styles.reasonWrap}>
             {REPORT_REASONS.map((r) => (
               <Pressable
@@ -237,7 +254,7 @@ export default function ListingDetail() {
           </View>
           <TextInput
             style={[styles.reportInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.card }]}
-            placeholder="Izoh (ixtiyoriy)"
+            placeholder={t.listing.reportComment}
             placeholderTextColor={colors.muted}
             value={reportComment}
             onChangeText={setReportComment}
@@ -248,7 +265,7 @@ export default function ListingDetail() {
             onPress={submitReport}
             disabled={!reportReason || reportSending}
           >
-            <Text style={styles.reportSubmitText}>Yuborish</Text>
+            <Text style={styles.reportSubmitText}>{t.listing.reportSend}</Text>
           </Pressable>
         </View>
       </Modal>
@@ -320,7 +337,7 @@ const styles = StyleSheet.create({
   sellerAvatar: { width: s(48), height: s(48), borderRadius: s(24), alignItems: 'center', justifyContent: 'center' },
   sellerName: { fontSize: ms(15.5), fontWeight: '800' },
   sellerPhone: { fontSize: ms(13), fontVariant: ['tabular-nums'], marginTop: s(2) },
-  verifiedBadge: { width: s(30), height: s(30), borderRadius: s(15), alignItems: 'center', justifyContent: 'center' },
+  sellerLink: { fontSize: ms(12.5), fontWeight: '700', marginTop: s(4) },
   reportLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: s(6), paddingVertical: s(16), marginTop: s(6) },
   reportText: { fontSize: ms(13), textDecorationLine: 'underline' },
   footer: { flexDirection: 'row', gap: s(12), paddingHorizontal: theme.space.lg, paddingTop: s(12), borderTopWidth: 1 },

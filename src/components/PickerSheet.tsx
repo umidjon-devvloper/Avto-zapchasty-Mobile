@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '../theme/useColors';
+import { useT } from '../lib/i18n';
 import { theme, s, ms } from '../theme';
 
 export interface Option { value: string; label: string }
@@ -21,6 +22,7 @@ export function PickerSheet({
 }) {
   const insets = useSafeAreaInsets();
   const colors = useColors();
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const selected = options.find((o) => o.value === value);
@@ -47,7 +49,7 @@ export function PickerSheet({
         onPress={() => setOpen(true)}
       >
         <Text style={[styles.value, { color: colors.text }, !selected && { color: colors.faint, fontWeight: '400' }]} numberOfLines={1}>
-          {selected ? selected.label : loading ? 'Yuklanmoqda...' : placeholder}
+          {selected ? selected.label : loading ? t.common.loading : placeholder}
         </Text>
         <Ionicons
           name={value ? 'checkmark-circle' : 'chevron-down'}
@@ -78,7 +80,7 @@ export function PickerSheet({
               <Ionicons name="search" size={ms(16)} color={colors.muted} />
               <TextInput
                 style={[styles.searchInput, { color: colors.text }]}
-                placeholder="Qidirish..."
+                placeholder={t.common.searchPlaceholder}
                 placeholderTextColor={colors.faint}
                 value={search}
                 onChangeText={setSearch}
@@ -123,7 +125,7 @@ export function PickerSheet({
             ListEmptyComponent={
               <View style={styles.emptyWrap}>
                 <Ionicons name="search-outline" size={ms(28)} color={colors.faint} />
-                <Text style={[styles.emptyText, { color: colors.muted }]}>Variant topilmadi</Text>
+                <Text style={[styles.emptyText, { color: colors.muted }]}>{t.common.noOptions}</Text>
               </View>
             }
           />

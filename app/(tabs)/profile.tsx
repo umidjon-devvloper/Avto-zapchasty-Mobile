@@ -10,6 +10,7 @@ import { api } from '../../src/lib/api';
 import { useColors, useScheme } from '../../src/theme/useColors';
 import { useNotificationStore } from '../../src/lib/notificationStore';
 import { useThemeStore, type SchemePreference } from '../../src/theme/themeStore';
+import { useT, useLocaleStore, type Locale } from '../../src/lib/i18n';
 import { theme, s, ms } from '../../src/theme';
 import { AuthPrompt } from '../../src/components/AuthPrompt';
 import { Wordmark } from '../../src/components/Brand';
@@ -19,21 +20,25 @@ import { disconnectSocket } from '../../src/lib/socket';
 type IconName = keyof typeof Ionicons.glyphMap;
 type MenuItem = { icon: IconName; label: string; sub?: string; tint: string; onPress: () => void };
 
-const ROLE_LABEL: Record<string, string> = {
-  buyer: 'Xaridor', seller: 'Sotuvchi', admin: 'Administrator', superadmin: 'Administrator',
-};
-
-const SCHEME_OPTIONS: { value: SchemePreference; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { value: 'system', label: 'Auto', icon: 'phone-portrait-outline' },
-  { value: 'light', label: 'Kunduz', icon: 'sunny-outline' },
-  { value: 'dark', label: 'Tun', icon: 'moon-outline' },
+const LOCALE_OPTIONS: { value: Locale; label: string }[] = [
+  { value: 'uz', label: "O'zbekcha" },
+  { value: 'ru', label: 'Русский' },
 ];
 
 export default function Profile() {
   const colors = useColors();
   const scheme = useScheme();
+  const t = useT();
+  const locale = useLocaleStore((st) => st.locale);
+  const setLocale = useLocaleStore((st) => st.setLocale);
   const preference = useThemeStore((st) => st.preference);
   const setPreference = useThemeStore((st) => st.setPreference);
+
+  const SCHEME_OPTIONS: { value: SchemePreference; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+    { value: 'system', label: t.profile.themeAuto, icon: 'phone-portrait-outline' },
+    { value: 'light', label: t.profile.themeLight, icon: 'sunny-outline' },
+    { value: 'dark', label: t.profile.themeDark, icon: 'moon-outline' },
+  ];
   const unreadNotifs = useNotificationStore((s) => s.notifications.filter((n) => !n.read).length);
   const { accessToken, user, logout } = useAuth();
   const setUser = useAuth((s) => s.setUser);
@@ -51,8 +56,38 @@ export default function Profile() {
     finally { setRefreshing(false); }
   }, [setUser]);
 
+  // Apple 5.1.1(v): akkauntni ilova ichida o'chirish imkoni — ikki bosqichli tasdiq
+  const onDeleteAccount = () => {
+    Alert.alert(t.profile.deleteConfirmTitle, t.profile.deleteConfirmText, [
+      { text: t.profile.cancel, style: 'cancel' },
+      {
+        text: t.profile.deleteConfirmBtn,
+        style: 'destructive',
+        onPress: () =>
+          Alert.alert(t.profile.deleteFinalTitle, t.profile.deleteFinalText, [
+            { text: t.profile.cancel, style: 'cancel' },
+            {
+              text: t.profile.deleteConfirmBtn,
+              style: 'destructive',
+              onPress: async () => {
+                try {
+                  await api.deleteAccount();
+                  await unregisterPush();
+                  disconnectSocket();
+                  logout();
+                  Alert.alert(t.profile.deleteDone);
+                } catch (e) {
+                  Alert.alert(t.common.error, String(e));
+                }
+              },
+            },
+          ]),
+      },
+    ]);
+  };
+
   if (!accessToken || !user) {
-    return <AuthPrompt text="Profil va e'lonlaringiz uchun tizimga kiring" />;
+    return <AuthPrompt text={t.profile.loginPrompt} />;
   }
 
   const initial = (user.name || user.phone || '?').trim().charAt(0).toUpperCase();
@@ -60,18 +95,18 @@ export default function Profile() {
 
   const groups: { title: string; items: MenuItem[] }[] = [
     {
-      title: 'Faoliyat',
+      title: t.profile.activity,
       items: [
-        { icon: 'pricetags', label: "Mening e'lonlarim", sub: "Joylashtirilgan e'lonlar", tint: colors.ink, onPress: () => router.push('/my-listings') },
-        { icon: 'add-circle', label: "Yangi e'lon berish", sub: 'Detalingizni soting', tint: colors.primary, onPress: () => router.push('/create-listing') },
+        { icon: 'pricetags', label: t.profile.myListings, sub: t.profile.myListingsSub, tint: colors.ink, onPress: () => router.push('/my-listings') },
+        { icon: 'add-circle', label: t.profile.newListing, sub: t.profile.newListingSub, tint: colors.primary, onPress: () => router.push('/create-listing') },
       ],
     },
     {
-      title: 'Hisob',
+      title: t.profile.account,
       items: [
-        { icon: 'heart', label: 'Saralangan', sub: "Yoqtirgan e'lonlaringiz", tint: colors.danger, onPress: () => router.push('/favorites') },
-        { icon: 'chatbubbles', label: 'Xabarlar', sub: 'Sotuvchilar bilan suhbat', tint: colors.info, onPress: () => router.push('/messages') },
-        { icon: 'notifications', label: 'Bildirishnomalar', sub: unreadNotifs > 0 ? `${unreadNotifs} ta yangi` : 'Admin xabarlari', tint: colors.primary, onPress: () => router.push('/notifications') },
+        { icon: 'heart', label: t.profile.favorites, sub: t.profile.favoritesSub, tint: colors.danger, onPress: () => router.push('/favorites') },
+        { icon: 'chatbubbles', label: t.profile.messages, sub: t.profile.messagesSub, tint: colors.info, onPress: () => router.push('/messages') },
+        { icon: 'notifications', label: t.profile.notifications, sub: unreadNotifs > 0 ? t.profile.notificationsSubNew(unreadNotifs) : t.profile.notificationsSub, tint: colors.primary, onPress: () => router.push('/notifications') },
       ],
     },
   ];
@@ -86,7 +121,7 @@ export default function Profile() {
       >
         <LinearGradient colors={theme.gradients.brand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
           <SafeAreaView edges={['top']}>
-            <Text style={styles.headerLabel}>Profil</Text>
+            <Text style={styles.headerLabel}>{t.profile.title}</Text>
             <View style={styles.identity}>
               <View style={styles.avatarWrap}>
                 <Text style={styles.avatarText}>{initial}</Text>
@@ -98,12 +133,12 @@ export default function Profile() {
               </View>
               <View style={styles.identityInfo}>
                 <View style={styles.nameRow}>
-                  <Text style={styles.name} numberOfLines={1}>{user.name || 'Foydalanuvchi'}</Text>
+                  <Text style={styles.name} numberOfLines={1}>{user.name || t.common.user}</Text>
                   {verified && <Ionicons name="checkmark-circle" size={ms(17)} color="#fff" />}
                 </View>
                 <Text style={styles.phone}>{user.phone}</Text>
                 <View style={styles.roleChip}>
-                  <Text style={styles.roleText}>{ROLE_LABEL[user.role] || 'Foydalanuvchi'}</Text>
+                  <Text style={styles.roleText}>{t.profile.roles[user.role] || t.common.user}</Text>
                 </View>
               </View>
             </View>
@@ -114,7 +149,7 @@ export default function Profile() {
                 {verified && (
                   <View style={styles.shopVerified}>
                     <Ionicons name="shield-checkmark" size={ms(11)} color={colors.success} />
-                    <Text style={[styles.shopVerifiedText, { color: colors.success }]}>Tasdiqlangan</Text>
+                    <Text style={[styles.shopVerifiedText, { color: colors.success }]}>{t.profile.verified}</Text>
                   </View>
                 )}
               </View>
@@ -153,7 +188,7 @@ export default function Profile() {
         ))}
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.muted }]}>Ko'rinish</Text>
+          <Text style={[styles.sectionTitle, { color: colors.muted }]}>{t.profile.appearance}</Text>
           <View style={[styles.groupCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.themeRow}>
               <View style={[styles.themeIcon, { backgroundColor: colors.brandSoft }]}>
@@ -177,6 +212,27 @@ export default function Profile() {
                 })}
               </View>
             </View>
+            <View style={[styles.themeRow, { borderTopWidth: 1, borderTopColor: colors.hairline }]}>
+              <View style={[styles.themeIcon, { backgroundColor: colors.brandSoft }]}>
+                <Ionicons name="language" size={ms(18)} color={colors.ink} />
+              </View>
+              <View style={[styles.themeSegment, { backgroundColor: colors.surface }]}>
+                {LOCALE_OPTIONS.map((opt) => {
+                  const active = locale === opt.value;
+                  return (
+                    <Pressable
+                      key={opt.value}
+                      style={[styles.themeBtn, active && { backgroundColor: colors.card, ...theme.shadow.sm }]}
+                      onPress={() => setLocale(opt.value)}
+                    >
+                      <Text style={[styles.themeBtnText, { color: active ? colors.ink : colors.faint }]}>
+                        {opt.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
           </View>
         </View>
 
@@ -188,20 +244,32 @@ export default function Profile() {
               pressed && { opacity: 0.82 },
             ]}
             onPress={() =>
-              Alert.alert('Chiqish', 'Hisobdan chiqasizmi?', [
-                { text: 'Bekor', style: 'cancel' },
-                { text: 'Chiqish', style: 'destructive', onPress: async () => { await unregisterPush(); disconnectSocket(); logout(); } },
+              Alert.alert(t.profile.logoutConfirmTitle, t.profile.logoutConfirmText, [
+                { text: t.profile.cancel, style: 'cancel' },
+                { text: t.profile.logoutConfirmTitle, style: 'destructive', onPress: async () => { await unregisterPush(); disconnectSocket(); logout(); } },
               ])
             }
           >
             <Ionicons name="log-out-outline" size={ms(19)} color={colors.danger} />
-            <Text style={[styles.logoutText, { color: colors.danger }]}>Tizimdan chiqish</Text>
+            <Text style={[styles.logoutText, { color: colors.danger }]}>{t.profile.logout}</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.deleteBtn,
+              { backgroundColor: colors.danger },
+              pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] },
+            ]}
+            onPress={onDeleteAccount}
+          >
+            <Ionicons name="trash-outline" size={ms(18)} color="#fff" />
+            <Text style={styles.deleteText}>{t.profile.deleteAccount}</Text>
           </Pressable>
         </View>
 
         <View style={styles.footer}>
           <Wordmark size={ms(16)} />
-          <Text style={[styles.version, { color: colors.faint }]}>v1.0.0 · Ehtiyot qismlar bozori</Text>
+          <Text style={[styles.version, { color: colors.faint }]}>v1.0.0 · {t.home.tagline}</Text>
         </View>
       </ScrollView>
     </View>
@@ -260,6 +328,13 @@ const styles = StyleSheet.create({
 
   logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: s(8), paddingVertical: s(16), borderRadius: theme.radius.xl, borderWidth: 1 },
   logoutText: { fontSize: ms(15), fontWeight: '800' },
+  deleteBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: s(8),
+    paddingVertical: s(16), borderRadius: theme.radius.xl, marginTop: s(10),
+    shadowColor: '#e23d3d', shadowOpacity: 0.3, shadowRadius: 14,
+    shadowOffset: { width: 0, height: 7 }, elevation: 5,
+  },
+  deleteText: { fontSize: ms(15), fontWeight: '800', color: '#fff' },
 
   footer: { alignItems: 'center', paddingTop: s(28), paddingBottom: s(8), gap: s(5) },
   version: { fontSize: ms(11.5) },

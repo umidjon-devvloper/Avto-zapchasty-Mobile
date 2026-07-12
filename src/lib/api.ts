@@ -3,7 +3,7 @@ import { API_URL } from '../config';
 import { useAuth } from './auth';
 import type {
   Brand, CarModel, ChatMessage, City, ConversationInfo, ConversationItem, Listing,
-  Paginated, PartCategory, PartType, Suggestion, User,
+  Paginated, PartCategory, PartType, SellerPublicProfile, Suggestion, User,
 } from './types';
 
 export const http = axios.create({ baseURL: API_URL });
@@ -73,6 +73,7 @@ export const api = {
   me: () => http.get<{ user: User }>('/auth/me').then((r) => r.data.user),
   updateProfile: (body: { name?: string; shopName?: string; city?: string }) =>
     http.patch<{ user: User }>('/auth/me', body).then((r) => r.data.user),
+  deleteAccount: () => http.delete('/auth/me').then((r) => r.data),
 
   // Katalog
   categories: () => http.get<{ categories: PartCategory[] }>('/catalog/categories').then((r) => r.data.categories),
@@ -105,6 +106,10 @@ export const api = {
   setStatus: (id: string, status: string) =>
     http.patch<{ listing: Listing }>(`/listings/${id}/status`, { status }).then((r) => r.data.listing),
   removeListing: (id: string) => http.delete(`/listings/${id}`).then((r) => r.data),
+
+  // Sotuvchi ochiq profili
+  sellerProfile: (id: string) =>
+    http.get<{ profile: SellerPublicProfile }>(`/users/${id}/profile`).then((r) => r.data.profile),
 
   // Push token
   registerPushToken: (token: string) => http.post('/users/push-token', { token }).then((r) => r.data),

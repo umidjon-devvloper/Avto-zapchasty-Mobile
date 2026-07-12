@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FlatList, View, Text, Pressable, StyleSheet, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,6 +9,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
 import { getSocket } from '../../src/lib/socket';
+import { useT } from '../../src/lib/i18n';
 import { useColors } from '../../src/theme/useColors';
 import { theme, s, ms } from '../../src/theme';
 import { resolveImage } from '../../src/lib/image';
@@ -29,14 +30,23 @@ function shortTime(iso: string): string {
 
 export default function Messages() {
   const colors = useColors();
+  const t = useT();
   const qc = useQueryClient();
   const token = useAuth((s) => s.accessToken);
   const myId = useAuth((s) => s.user?._id ?? s.user?.id);
-  const { data, isLoading, refetch, isRefetching } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['conversations'],
     queryFn: api.conversations,
     enabled: !!token,
   });
+
+  // Spinner faqat foydalanuvchi qo'lda tortganda ko'rinadi
+  // (isRefetching ishlatilsa, fon yangilanishlarida ham chiqib qotib qoladi)
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try { await refetch(); } finally { setRefreshing(false); }
+  }, [refetch]);
 
   useEffect(() => {
     if (!token) return;
@@ -51,7 +61,7 @@ export default function Messages() {
     };
   }, [token, qc]);
 
-  if (!token) return <AuthPrompt text="Xabarlarni ko'rish uchun tizimga kiring" />;
+  if (!token) return <AuthPrompt text={t.messages.loginPrompt} />;
 
   const totalUnread = (data ?? []).reduce((s: number, c: any) => s + c.unread, 0);
 
@@ -63,8 +73,8 @@ export default function Messages() {
         <SafeAreaView edges={['top']}>
           <View style={styles.headerRow}>
             <View>
-              <Text style={styles.headerTitle}>Xabarlar</Text>
-              {totalUnread > 0 && <Text style={styles.headerSub}>{totalUnread} ta o'qilmagan xabar</Text>}
+              <Text style={styles.headerTitle}>{t.messages.title}</Text>
+              {totalUnread > 0 && <Text style={styles.headerSub}>{t.messages.unreadN(totalUnread)}</Text>}
             </View>
             {totalUnread > 0 && (
               <View style={[styles.unreadBadge, { backgroundColor: colors.primary }]}>
@@ -86,8 +96,8 @@ export default function Messages() {
             const photo = item.listing?.photos?.[0];
             const isMine = item.lastMessage?.senderId === myId;
             const preview = item.lastMessage
-              ? (isMine ? 'Siz: ' : '') + item.lastMessage.text
-              : 'Suhbat boshlandi';
+              ? (isMine ? t.messages.you : '') + item.lastMessage.text
+              : t.messages.started;
             const unread = item.unread > 0;
             const initial = (item.other?.shopName || item.other?.name || '?').charAt(0).toUpperCase();
 
@@ -119,7 +129,7 @@ export default function Messages() {
                 <View style={styles.content}>
                   <View style={styles.topLine}>
                     <Text numberOfLines={1} style={[styles.name, { color: colors.text }, unread && { fontWeight: '800', color: colors.ink }]}>
-                      {item.other?.shopName || item.other?.name || 'Foydalanuvchi'}
+                      {item.other?.shopName || item.other?.name || t.common.user}
                     </Text>
                     <Text style={[styles.time, { color: colors.faint }]}>
                       {item.lastMessage ? shortTime(item.lastMessage.at) : ''}
@@ -153,9 +163,9 @@ export default function Messages() {
             );
           }}
           contentContainerStyle={styles.list}
-          ListEmptyComponent={<EmptyState icon="chatbubbles-outline" text="Hozircha xabarlar yo'q" />}
-          refreshing={isRefetching}
-          onRefresh={refetch}
+          ListEmptyComponent={<EmptyState icon="chatbubbles-outline" text={t.messages.empty} />}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
         />
       )}
     </View>

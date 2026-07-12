@@ -4,8 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useColors } from '../theme/useColors';
-import { theme, s, ms, CONDITION_LABELS } from '../theme';
-import { formatPrice, timeAgo } from '../lib/format';
+import { theme, s, ms } from '../theme';
+import { useT, formatPriceT, timeAgoShortT } from '../lib/i18n';
 import { resolveImage } from '../lib/image';
 import type { Listing } from '../lib/types';
 
@@ -19,6 +19,7 @@ export function ListingCard({ listing, variant = 'row' }: { listing: Listing; va
 function GridCard({ listing }: { listing: Listing }) {
   const photo = listing.photos?.[0];
   const colors = useColors();
+  const t = useT();
   return (
     <Pressable
       onPress={() => router.push(`/listing/${listing._id}`)}
@@ -38,7 +39,7 @@ function GridCard({ listing }: { listing: Listing }) {
         )}
         <LinearGradient colors={['transparent', 'rgba(9,16,40,0.55)']} style={styles.gImgGrad} pointerEvents="none" />
         <View style={styles.condTag}>
-          <Text style={styles.condTagText}>{CONDITION_LABELS[listing.condition] || listing.condition}</Text>
+          <Text style={styles.condTagText}>{t.conditions[listing.condition] || listing.condition}</Text>
         </View>
         {listing.delivery && (
           <View style={[styles.deliveryTag, { backgroundColor: colors.successSoft, borderColor: colors.success + '40' }]}>
@@ -49,16 +50,17 @@ function GridCard({ listing }: { listing: Listing }) {
 
       <View style={styles.gInfo}>
         <Text style={[styles.gPrice, { color: colors.text }]}>
-          {formatPrice(listing.price.amount, listing.price.currency)}
+          {formatPriceT(listing.price.amount, listing.price.currency, t)}
         </Text>
         <Text numberOfLines={2} style={[styles.gTitle, { color: colors.inkSoft }]}>{listing.title}</Text>
         <View style={styles.gFoot}>
-          <Ionicons name="location-outline" size={ms(11)} color={colors.faint} />
-          <Text numberOfLines={1} style={[styles.gMeta, { color: colors.faint }]}>
-            {listing.city || "O'zbekiston"}
-          </Text>
-          <View style={[styles.dot, { backgroundColor: colors.faint }]} />
-          <Text style={[styles.gMeta, { color: colors.faint }]}>{timeAgo(listing.createdAt)}</Text>
+          <View style={styles.gFootLeft}>
+            <Ionicons name="location-outline" size={ms(11)} color={colors.faint} />
+            <Text numberOfLines={1} style={[styles.gMeta, { color: colors.faint }]}>
+              {listing.city || "O'zbekiston"}
+            </Text>
+          </View>
+          <Text style={[styles.gTime, { color: colors.faint }]}>{timeAgoShortT(listing.createdAt, t)}</Text>
         </View>
       </View>
     </Pressable>
@@ -68,6 +70,7 @@ function GridCard({ listing }: { listing: Listing }) {
 function RowCard({ listing }: { listing: Listing }) {
   const photo = listing.photos?.[0];
   const colors = useColors();
+  const t = useT();
   return (
     <Pressable
       onPress={() => router.push(`/listing/${listing._id}`)}
@@ -95,12 +98,12 @@ function RowCard({ listing }: { listing: Listing }) {
       <View style={styles.info}>
         <Text numberOfLines={2} style={[styles.title, { color: colors.text }]}>{listing.title}</Text>
         <Text style={[styles.price, { color: colors.ink }]}>
-          {formatPrice(listing.price.amount, listing.price.currency)}
+          {formatPriceT(listing.price.amount, listing.price.currency, t)}
         </Text>
         <View style={styles.meta}>
           <View style={[styles.condChip, { backgroundColor: colors.primarySoft }]}>
             <Text style={[styles.condChipText, { color: colors.primaryDark }]}>
-              {CONDITION_LABELS[listing.condition] || listing.condition}
+              {t.conditions[listing.condition] || listing.condition}
             </Text>
           </View>
           {listing.city ? (
@@ -148,9 +151,10 @@ const styles = StyleSheet.create({
   gInfo: { padding: s(10), gap: s(4) },
   gPrice: { fontSize: ms(15.5), fontWeight: '900', fontVariant: ['tabular-nums'], letterSpacing: -0.3 },
   gTitle: { fontSize: ms(12.5), fontWeight: '500', lineHeight: ms(17), minHeight: s(34) },
-  gFoot: { flexDirection: 'row', alignItems: 'center', gap: s(3), marginTop: s(2) },
+  gFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: s(6), marginTop: s(2) },
+  gFootLeft: { flexDirection: 'row', alignItems: 'center', gap: s(3), flex: 1 },
   gMeta: { fontSize: ms(10.5), fontWeight: '500', flexShrink: 1 },
-  dot: { width: s(3), height: s(3), borderRadius: 2 },
+  gTime: { fontSize: ms(10.5), fontWeight: '500', flexShrink: 0 },
 
   card: {
     flexDirection: 'row', alignItems: 'center', gap: theme.space.md,

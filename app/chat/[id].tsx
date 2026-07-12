@@ -11,7 +11,7 @@ import { useAuth } from '../../src/lib/auth';
 import { getSocket } from '../../src/lib/socket';
 import { useColors } from '../../src/theme/useColors';
 import { theme, s, ms } from '../../src/theme';
-import { timeAgo } from '../../src/lib/format';
+import { useT, timeAgoT } from '../../src/lib/i18n';
 import { Loading } from '../../src/components/Loading';
 import type { ChatMessage, ConversationInfo } from '../../src/lib/types';
 
@@ -19,6 +19,7 @@ export default function ChatThread() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const colors = useColors();
+  const t = useT();
   const qc = useQueryClient();
   const myId = useAuth((s) => s.user?._id ?? s.user?.id);
   const [text, setText] = useState('');
@@ -85,16 +86,16 @@ export default function ChatThread() {
   };
 
   const onCall = async () => {
-    if (!peer?.phone) { Alert.alert('Telefon raqami ko\'rsatilmagan'); return; }
+    if (!peer?.phone) { Alert.alert(t.listing.noPhoneAlert); return; }
     const url = `tel:${peer.phone}`;
     if (await Linking.canOpenURL(url)) await Linking.openURL(url);
-    else Alert.alert('Qo\'ng\'iroq qilib bo\'lmadi', `Raqam: ${peer.phone}`);
+    else Alert.alert(t.listing.callFailed, `${t.listing.phoneWord}: ${peer.phone}`);
   };
 
   const ordered = [...(messages ?? [])].reverse();
-  const title = peer?.shopName || peer?.name || 'Suhbat';
+  const title = peer?.shopName || peer?.name || t.chat.conversation;
   const initial = title.trim().charAt(0).toUpperCase();
-  const presence = peer?.online ? 'onlayn' : peer?.lastSeen ? `oxirgi marta ${timeAgo(peer.lastSeen)}` : '';
+  const presence = peer?.online ? t.chat.online : peer?.lastSeen ? t.chat.lastSeen(timeAgoT(peer.lastSeen, t)) : '';
 
   return (
     <KeyboardAvoidingView
@@ -116,7 +117,7 @@ export default function ChatThread() {
             <View style={styles.subRow}>
               {peer?.online ? <View style={[styles.subDot, { backgroundColor: colors.success }]} /> : null}
               <Text style={styles.sub} numberOfLines={1}>
-                {[presence, peer?.phone].filter(Boolean).join('  ·  ') || 'Suhbat'}
+                {[presence, peer?.phone].filter(Boolean).join('  ·  ') || t.chat.conversation}
               </Text>
             </View>
           </View>
@@ -159,7 +160,7 @@ export default function ChatThread() {
       <View style={[styles.inputBar, { paddingBottom: Math.max(insets.bottom, 10), borderTopColor: colors.border, backgroundColor: colors.card }]}>
         <TextInput
           style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.bg }]}
-          placeholder="Xabar yozing..."
+          placeholder={t.chat.typePlaceholder}
           placeholderTextColor={colors.muted}
           value={text}
           onChangeText={setText}

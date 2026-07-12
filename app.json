@@ -11,7 +11,11 @@
     "ios": {
       "supportsTablet": true,
       "icon": "./assets/icon.png",
-      "bundleIdentifier": "com.zapchasty.zapchasty"
+      "bundleIdentifier": "com.zapchasty.zapchasty",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Ovozli xabar yuborish uchun mikrofonga ruxsat kerak.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "uz.autoparts.app",
@@ -51,7 +55,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Ilova rasm tanlash uchun galereyaga ruxsat so'raydi."
+          "photosPermission": "Ilova rasm tanlash uchun galereyaga ruxsat so'raydi.",
+          "cameraPermission": "E'lon uchun rasm olishga kamera ruxsati kerak."
         }
       ],
       "expo-font"

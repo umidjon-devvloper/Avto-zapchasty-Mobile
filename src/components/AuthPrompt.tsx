@@ -4,12 +4,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useColors } from '../theme/useColors';
+import { useT } from '../lib/i18n';
 import { theme, s, ms } from '../theme';
 import { Button } from './Button';
 import { LogoMark, Wordmark } from './Brand';
 
 export function AuthPrompt({ text }: { text: string }) {
   const colors = useColors();
+  const t = useT();
   return (
     <View style={styles.root}>
       <LinearGradient
@@ -31,16 +33,16 @@ export function AuthPrompt({ text }: { text: string }) {
             <View style={[styles.iconRing, { backgroundColor: colors.brandSoft, borderColor: colors.border }]}>
               <Ionicons name="lock-closed-outline" size={ms(28)} color={colors.ink} />
             </View>
-            <Text style={[styles.title, { color: colors.text }]}>Kirish talab etiladi</Text>
+            <Text style={[styles.title, { color: colors.text }]}>{t.auth.required}</Text>
             <Text style={[styles.sub, { color: colors.muted }]}>{text}</Text>
 
             <Button
-              title="Tizimga kirish"
+              title={t.auth.login}
               onPress={() => router.push('/auth/login')}
               style={styles.btn}
             />
             <Button
-              title="Ro'yxatdan o'tish"
+              title={t.auth.register}
               variant="outline"
               onPress={() => router.push('/auth/login?mode=register')}
               style={styles.btn}

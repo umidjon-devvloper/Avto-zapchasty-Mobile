@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../src/lib/api';
+import { useT, useLocalize } from '../../src/lib/i18n';
 import { useColors, useScheme } from '../../src/theme/useColors';
 import { theme, s, ms } from '../../src/theme';
 import { ListingCard } from '../../src/components/ListingCard';
@@ -67,6 +68,8 @@ function CategoryHeader({ title, subtitle, slug }: { title: string; subtitle?: s
 function SubcategoryGrid({ categoryId, categoryName, slug }: { categoryId: string; categoryName: string; slug?: string }) {
   const colors = useColors();
   const tones = useTones();
+  const t = useT();
+  const lz = useLocalize();
   const { data: subs, isLoading } = useQuery({
     queryKey: ['subcategories', categoryId],
     queryFn: () => api.subcategories(categoryId),
@@ -78,12 +81,12 @@ function SubcategoryGrid({ categoryId, categoryName, slug }: { categoryId: strin
         <CategoryHeader
           title={categoryName}
           slug={slug}
-          subtitle={subs?.length ? `${subs.length} bo'lim · kerakli bo'limni tanlang` : undefined}
+          subtitle={subs?.length ? t.category.sectionsN(subs.length) : undefined}
         />
         {isLoading ? (
           <Loading />
         ) : !subs?.length ? (
-          <EmptyState icon="folder-open-outline" text="Pastki kategoriyalar topilmadi" />
+          <EmptyState icon="folder-open-outline" text={t.category.noSubcategories} />
         ) : (
           <View style={styles.subGrid}>
             {subs.map((sub: PartCategory, i: number) => {
@@ -99,7 +102,7 @@ function SubcategoryGrid({ categoryId, categoryName, slug }: { categoryId: strin
                   onPress={() =>
                     router.push({
                       pathname: '/category/[id]',
-                      params: { id: sub._id, name: sub.name.uz || sub.name.ru, slug: sub.slug, level: '2' },
+                      params: { id: sub._id, name: lz(sub.name), slug: sub.slug, level: '2' },
                     })
                   }
                 >
@@ -107,8 +110,8 @@ function SubcategoryGrid({ categoryId, categoryName, slug }: { categoryId: strin
                     <Ionicons name={categoryIcon(sub.slug)} size={ms(28)} color={tone.icon} />
                   </LinearGradient>
                   <View style={styles.subInfo}>
-                    <Text style={[styles.subName, { color: colors.text }]}>{sub.name.uz || sub.name.ru}</Text>
-                    <Text style={[styles.subHint, { color: colors.muted }]}>Detallarni ko'rish →</Text>
+                    <Text style={[styles.subName, { color: colors.text }]}>{lz(sub.name)}</Text>
+                    <Text style={[styles.subHint, { color: colors.muted }]}>{t.category.viewParts}</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={ms(16)} color={colors.muted} />
                 </Pressable>
@@ -124,6 +127,7 @@ function SubcategoryGrid({ categoryId, categoryName, slug }: { categoryId: strin
 function PartTypeList({ categoryId, categoryName, slug }: { categoryId: string; categoryName: string; slug?: string }) {
   const colors = useColors();
   const tones = useTones();
+  const t = useT();
   const { data: partTypes, isLoading } = useQuery({
     queryKey: ['part-types', categoryId],
     queryFn: () => api.categoryPartTypes(categoryId),
@@ -132,11 +136,11 @@ function PartTypeList({ categoryId, categoryName, slug }: { categoryId: string; 
   return (
     <View style={[styles.root, { backgroundColor: colors.bg }]}>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-        <CategoryHeader title={categoryName} slug={slug} subtitle="aniq detal turini tanlang" />
+        <CategoryHeader title={categoryName} slug={slug} subtitle={t.category.selectPartType} />
         {isLoading ? (
           <Loading />
         ) : !partTypes?.length ? (
-          <EmptyState icon="cube-outline" text="Detal turlari topilmadi" />
+          <EmptyState icon="cube-outline" text={t.category.noPartTypes} />
         ) : (
           <View style={styles.ptList}>
             {partTypes.map((pt: PartType, i: number) => {
@@ -173,6 +177,7 @@ function PartTypeList({ categoryId, categoryName, slug }: { categoryId: string; 
 
 function ListingsByPartType({ partTypeId, name }: { partTypeId: string; name: string }) {
   const colors = useColors();
+  const t = useT();
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ['listings-by-parttype', partTypeId],
     queryFn: ({ pageParam }) => api.search({ partTypeId, page: pageParam, limit: 20 }),
@@ -201,7 +206,7 @@ function ListingsByPartType({ partTypeId, name }: { partTypeId: string; name: st
           contentContainerStyle={{ paddingBottom: theme.space.lg, gap: theme.space.md, flexGrow: 1 }}
           ListEmptyComponent={
             <View style={{ padding: theme.space.lg }}>
-              <EmptyState icon="cube-outline" text="Bu bo'limda e'lon yo'q" />
+              <EmptyState icon="cube-outline" text={t.category.noListings} />
             </View>
           }
           onEndReached={() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage(); }}
@@ -215,13 +220,14 @@ function ListingsByPartType({ partTypeId, name }: { partTypeId: string; name: st
 }
 
 export default function CategoryScreen() {
+  const t = useT();
   const { id, name, level, partTypeId, slug } = useLocalSearchParams<{
     id: string; name?: string; level?: string; partTypeId?: string; slug?: string;
   }>();
 
-  if (level === '3' && partTypeId) return <ListingsByPartType partTypeId={partTypeId} name={name || "E'lonlar"} />;
-  if (level === '2') return <PartTypeList categoryId={id} categoryName={name || 'Kategoriya'} slug={slug} />;
-  return <SubcategoryGrid categoryId={id} categoryName={name || 'Kategoriya'} slug={slug} />;
+  if (level === '3' && partTypeId) return <ListingsByPartType partTypeId={partTypeId} name={name || t.category.listingsFallback} />;
+  if (level === '2') return <PartTypeList categoryId={id} categoryName={name || t.category.fallback} slug={slug} />;
+  return <SubcategoryGrid categoryId={id} categoryName={name || t.category.fallback} slug={slug} />;
 }
 
 const styles = StyleSheet.create({
