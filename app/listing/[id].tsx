@@ -14,7 +14,7 @@ import { api, errMessage } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
 import { useColors } from '../../src/theme/useColors';
 import { theme, s, ms } from '../../src/theme';
-import { useT, formatPriceT } from '../../src/lib/i18n';
+import { useT, formatPriceT, useLocalizePart } from '../../src/lib/i18n';
 import { formatDate } from '../../src/lib/format';
 import { resolveImage } from '../../src/lib/image';
 import { Loading } from '../../src/components/Loading';
@@ -36,6 +36,7 @@ export default function ListingDetail() {
     { value: 'offensive', label: t.reportReasons.offensive },
     { value: 'other', label: t.reportReasons.other },
   ];
+  const lzp = useLocalizePart();
   const token = useAuth((s) => s.accessToken);
   const { data, isLoading } = useQuery({ queryKey: ['listing', id], queryFn: () => api.getListing(id) });
   const [fav, setFav] = useState<boolean | null>(null);
@@ -46,6 +47,7 @@ export default function ListingDetail() {
   const [reportReason, setReportReason] = useState('');
   const [reportComment, setReportComment] = useState('');
   const [reportSending, setReportSending] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   const toggle = useMutation({ mutationFn: () => api.toggleFavorite(id), onSuccess: (r) => setFav(r.isFavorite) });
 
@@ -98,7 +100,9 @@ export default function ListingDetail() {
           {photos.length > 0 ? (
             <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} onMomentumScrollEnd={onPhotoScroll} scrollEventThrottle={16} style={{ backgroundColor: colors.brandDark }}>
               {photos.map((p: string, i: number) => (
-                <Image key={i} source={{ uri: resolveImage(p) }} style={{ width, height: heroH, backgroundColor: colors.brandDark }} contentFit="cover" transition={160} />
+                <Pressable key={i} onPress={() => setViewerOpen(true)}>
+                  <Image source={{ uri: resolveImage(p) }} style={{ width, height: heroH, backgroundColor: colors.brandDark }} contentFit="cover" transition={160} />
+                </Pressable>
               ))}
             </ScrollView>
           ) : (
@@ -166,7 +170,7 @@ export default function ListingDetail() {
           {(fitment || l.manufacturer || l.partTypeId?.name) && (
             <View style={[styles.specCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>{t.listing.details}</Text>
-              {l.partTypeId?.name ? <SpecRow icon="construct-outline" label={t.listing.partType} value={l.partTypeId.name} colors={colors} /> : null}
+              {l.partTypeId?.name ? <SpecRow icon="construct-outline" label={t.listing.partType} value={lzp(l.partTypeId)} colors={colors} /> : null}
               {l.manufacturer ? <SpecRow icon="business-outline" label={t.listing.manufacturer} value={l.manufacturer} colors={colors} /> : null}
               {fitment ? <SpecRow icon="car-sport-outline" label={t.listing.fitment} value={fitment} last colors={colors} /> : null}
             </View>
@@ -233,6 +237,41 @@ export default function ListingDetail() {
           </LinearGradient>
         </Pressable>
       </View>
+
+      {/* Rasm to'liq ekranda — surish + pinch-zoom */}
+      <Modal visible={viewerOpen} animationType="fade" transparent onRequestClose={() => setViewerOpen(false)} statusBarTranslucent>
+        <View style={styles.viewerRoot}>
+          <StatusBar style="light" />
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            contentOffset={{ x: photoIdx * width, y: 0 }}
+          >
+            {photos.map((p: string, i: number) => (
+              <ScrollView
+                key={i}
+                style={{ width }}
+                contentContainerStyle={styles.viewerPage}
+                maximumZoomScale={4}
+                minimumZoomScale={1}
+                showsVerticalScrollIndicator={false}
+                showsHorizontalScrollIndicator={false}
+                centerContent
+              >
+                <Image source={{ uri: resolveImage(p) }} style={{ width, height: '100%' }} contentFit="contain" />
+              </ScrollView>
+            ))}
+          </ScrollView>
+          <Pressable
+            style={[styles.viewerClose, { top: insets.top + s(8) }]}
+            onPress={() => setViewerOpen(false)}
+            hitSlop={12}
+          >
+            <Ionicons name="close" size={ms(26)} color="#fff" />
+          </Pressable>
+        </View>
+      </Modal>
 
       <Modal visible={reportOpen} animationType="slide" transparent onRequestClose={() => setReportOpen(false)}>
         <Pressable style={[styles.reportBackdrop, { backgroundColor: colors.overlay }]} onPress={() => setReportOpen(false)} />
@@ -351,6 +390,13 @@ const styles = StyleSheet.create({
   callBtn: { flex: 1, height: s(54), borderRadius: theme.radius.lg, overflow: 'hidden', ...theme.shadow.brand },
   callFill: { flex: 1, flexDirection: 'row', gap: s(8), alignItems: 'center', justifyContent: 'center' },
   callText: { color: '#fff', fontWeight: '800', fontSize: ms(16) },
+  viewerRoot: { flex: 1, backgroundColor: '#000' },
+  viewerPage: { flex: 1, justifyContent: 'center' },
+  viewerClose: {
+    position: 'absolute', right: s(16),
+    width: s(40), height: s(40), borderRadius: s(20),
+    backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center',
+  },
   reportBackdrop: { flex: 1 },
   reportSheet: { borderTopLeftRadius: s(24), borderTopRightRadius: s(24), padding: theme.space.lg, paddingBottom: s(32), gap: s(14) },
   sheetHandle: { width: s(40), height: s(4), borderRadius: 2, alignSelf: 'center', marginBottom: s(2) },

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, TextInput,
   StatusBar, Alert, Switch, ActivityIndicator, KeyboardAvoidingView,
@@ -7,12 +7,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errMessage } from '../src/lib/api';
 import { useAuth } from '../src/lib/auth';
-import { useT, useLocalize } from '../src/lib/i18n';
+import { useT, useLocalize, useLocalizePart } from '../src/lib/i18n';
 import { useColors } from '../src/theme/useColors';
 import { theme, s, ms } from '../src/theme';
 import { Button } from '../src/components/Button';
@@ -33,8 +33,11 @@ export default function CreateListing() {
   const colors = useColors();
   const t = useT();
   const lz = useLocalize();
+  const lzp = useLocalizePart();
   const qc = useQueryClient();
   const user = useAuth((st) => st.user);
+  const { editId } = useLocalSearchParams<{ editId?: string }>();
+  const isEdit = !!editId;
 
   // Backend enum: new | used | contract | original | duplicate
   const CONDITIONS = [
@@ -68,6 +71,35 @@ export default function CreateListing() {
   const [phone, setPhone] = useState(user?.phone ?? '');
   const [busy, setBusy] = useState(false);
 
+  // Tahrirlash rejimi — mavjud e'lonni yuklab, formani to'ldirish
+  const { data: editData } = useQuery({
+    queryKey: ['edit-listing', editId],
+    queryFn: () => api.getListing(editId!),
+    enabled: isEdit,
+  });
+  useEffect(() => {
+    if (!editData?.listing) return;
+    const l = editData.listing;
+    setPhotos(l.photos ?? []);
+    setCategoryId(l.categoryId?._id ?? '');
+    setPartTypeId(l.partTypeId?._id ?? '');
+    setTitle(l.title ?? '');
+    setDescription(l.description ?? '');
+    setPrice(l.price?.amount != null ? String(l.price.amount) : '');
+    setCurrency(l.price?.currency ?? 'UZS');
+    setCondition(l.condition ?? 'used');
+    setNegotiable(!!l.negotiable);
+    setManufacturer(l.manufacturer ?? '');
+    const b = l.fitment?.brandId;
+    const m = l.fitment?.modelId;
+    setBrandId(typeof b === 'object' ? b?._id ?? '' : (b ?? ''));
+    setModelId(typeof m === 'object' ? m?._id ?? '' : (m ?? ''));
+    setCity(l.city ?? '');
+    setOemNumber((l.oemNumbers ?? []).join(', '));
+    setDelivery(!!l.delivery);
+    if (l.phone) setPhone(l.phone);
+  }, [editData]);
+
   // Katalog ma'lumotlari
   const { data: categories = [], isLoading: catLoading } = useQuery({
     queryKey: ['categories'], queryFn: api.categories,
@@ -87,9 +119,10 @@ export default function CreateListing() {
   });
   const { data: cities = [] } = useQuery({ queryKey: ['cities'], queryFn: api.cities });
 
+  // Rasm ixtiyoriy — rasmsiz ham e'lon joylash mumkin
   const canSubmit =
     !!partTypeId && title.trim().length >= 3 && Number(price.replace(/\s/g, '')) > 0 &&
-    photos.length > 0 && !uploading;
+    !uploading;
 
   const pickPhotos = useCallback(async () => {
     if (photos.length >= 8) { Alert.alert(t.create.maxPhotos); return; }
@@ -123,9 +156,7 @@ export default function CreateListing() {
     if (!canSubmit) return;
     setBusy(true);
     try {
-      // Joylashuv: store'da bo'lmasa, oxirgi imkoniyat sifatida so'rab ko'ramiz
-      const coords = useLocationStore.getState().coords ?? (await requestLocation());
-      await api.createListing({
+      const body: Record<string, unknown> = {
         partTypeId,
         title: title.trim(),
         description: description.trim(),
@@ -139,13 +170,25 @@ export default function CreateListing() {
         city,
         delivery,
         phone: phone.trim(),
-        ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
-      });
-      qc.invalidateQueries({ queryKey: ['my-listings'] });
-      qc.invalidateQueries({ queryKey: ['listings'] });
-      Alert.alert(t.create.postedTitle, t.create.postedText, [
-        { text: t.common.ok, onPress: () => router.back() },
-      ]);
+      };
+
+      if (isEdit) {
+        await api.updateListing(editId!, body);
+        qc.invalidateQueries({ queryKey: ['my-listings'] });
+        qc.invalidateQueries({ queryKey: ['listing', editId] });
+        qc.invalidateQueries({ queryKey: ['listings'] });
+        Alert.alert(t.myListings.updated, undefined, [{ text: t.common.ok, onPress: () => router.back() }]);
+      } else {
+        // Joylashuv: store'da bo'lmasa, oxirgi imkoniyat sifatida so'rab ko'ramiz
+        const coords = useLocationStore.getState().coords ?? (await requestLocation());
+        if (coords) { body.lat = coords.lat; body.lng = coords.lng; }
+        await api.createListing(body);
+        qc.invalidateQueries({ queryKey: ['my-listings'] });
+        qc.invalidateQueries({ queryKey: ['listings'] });
+        Alert.alert(t.create.postedTitle, t.create.postedText, [
+          { text: t.common.ok, onPress: () => router.back() },
+        ]);
+      }
     } catch (e) {
       Alert.alert(t.common.error, errMessage(e));
     } finally {
@@ -163,7 +206,7 @@ export default function CreateListing() {
             <Pressable style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.7 }]} onPress={() => router.back()} hitSlop={10}>
               <Ionicons name="arrow-back" size={ms(20)} color="#fff" />
             </Pressable>
-            <Text style={styles.headerTitle}>{t.create.title}</Text>
+            <Text style={styles.headerTitle}>{isEdit ? t.myListings.editTitle : t.create.title}</Text>
             <View style={{ width: s(36) }} />
           </View>
         </SafeAreaView>
@@ -220,7 +263,7 @@ export default function CreateListing() {
               label={t.create.partType}
               placeholder={categoryId ? t.common.select : t.create.selectCategoryFirst}
               value={partTypeId}
-              options={partTypes.map((p) => ({ value: p._id, label: p.name }))}
+              options={partTypes.map((p) => ({ value: p._id, label: lzp(p) }))}
               onChange={setPartTypeId}
               disabled={!categoryId}
               loading={ptLoading}
@@ -394,7 +437,7 @@ export default function CreateListing() {
           )}
           <View style={{ position: 'relative' }}>
             <Button
-              title={busy ? '' : t.create.submit}
+              title={busy ? '' : isEdit ? t.myListings.saveEdit : t.create.submit}
               onPress={submit}
               disabled={!canSubmit || busy}
             />

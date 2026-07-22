@@ -1,12 +1,12 @@
 import { useCallback, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { FlatList, View, Text, Pressable, StyleSheet, StatusBar } from 'react-native';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { FlatList, View, Text, Pressable, StyleSheet, StatusBar, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { api } from '../src/lib/api';
+import { api, errMessage } from '../src/lib/api';
 import { useT, formatPriceT } from '../src/lib/i18n';
 import { useColors } from '../src/theme/useColors';
 import { theme, s, ms } from '../src/theme';
@@ -19,10 +19,51 @@ import { EmptyState } from '../src/components/EmptyState';
 export default function MyListings() {
   const colors = useColors();
   const t = useT();
+  const qc = useQueryClient();
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['my-listings'],
     queryFn: () => api.myListings({ limit: 50 }),
   });
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['my-listings'] });
+    qc.invalidateQueries({ queryKey: ['latest-listings'] });
+  };
+
+  // "Sotildi" deb belgilash
+  const markSold = (id: string) => {
+    Alert.alert(t.myListings.soldConfirmTitle, t.myListings.soldConfirmText, [
+      { text: t.myListings.cancel, style: 'cancel' },
+      {
+        text: t.myListings.soldBtn,
+        onPress: async () => {
+          try { await api.setStatus(id, 'sold'); invalidate(); }
+          catch (e) { Alert.alert(t.common.error, errMessage(e)); }
+        },
+      },
+    ]);
+  };
+
+  // Qayta soting (sotilgandan keyin faollashtirish — qayta moderatsiya)
+  const republish = async (id: string) => {
+    try { await api.setStatus(id, 'active'); invalidate(); }
+    catch (e) { Alert.alert(t.common.error, errMessage(e)); }
+  };
+
+  // O'chirish (ikki bosqichli tasdiq)
+  const remove = (id: string) => {
+    Alert.alert(t.myListings.deleteConfirmTitle, t.myListings.deleteConfirmText, [
+      { text: t.myListings.cancel, style: 'cancel' },
+      {
+        text: t.myListings.deleteBtn,
+        style: 'destructive',
+        onPress: async () => {
+          try { await api.removeListing(id); invalidate(); }
+          catch (e) { Alert.alert(t.common.error, errMessage(e)); }
+        },
+      },
+    ]);
+  };
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
@@ -81,38 +122,54 @@ export default function MyListings() {
           renderItem={({ item }) => {
             const tone: 'success' | 'danger' | 'neutral' =
               item.status === 'active' ? 'success' : item.status === 'rejected' ? 'danger' : 'neutral';
+            const isSold = item.status === 'sold';
             return (
-              <Pressable
-                style={({ pressed }) => [styles.row, { backgroundColor: colors.card, borderColor: colors.border }, pressed && { opacity: 0.9, transform: [{ scale: 0.995 }] }]}
-                onPress={() => router.push(`/listing/${item._id}`)}
-              >
-                <View style={[styles.imgWrap, { backgroundColor: colors.surface }]}>
-                  {item.photos?.[0] ? (
-                    <Image source={{ uri: resolveImage(item.photos[0]) }} style={styles.img} contentFit="cover" transition={120} />
-                  ) : (
-                    <View style={styles.imgFallback}>
-                      <Ionicons name="image-outline" size={ms(22)} color={colors.faint} />
-                    </View>
-                  )}
-                  {item.status === 'active' && <View style={[styles.activeDot, { backgroundColor: colors.success }]} />}
-                </View>
-
-                <View style={styles.info}>
-                  <Text numberOfLines={2} style={[styles.title, { color: colors.text }]}>{item.title}</Text>
-                  <Text style={[styles.price, { color: colors.ink }]}>{formatPriceT(item.price.amount, item.price.currency, t)}</Text>
-                  <View style={styles.bottomRow}>
-                    <Badge label={t.statuses[item.status as keyof typeof t.statuses] || item.status} tone={tone} />
-                    {item.views != null && (
-                      <View style={styles.viewRow}>
-                        <Ionicons name="eye-outline" size={ms(12)} color={colors.faint} />
-                        <Text style={[styles.viewText, { color: colors.faint }]}>{item.views}</Text>
+              <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Pressable
+                  style={({ pressed }) => [styles.row, pressed && { opacity: 0.9 }]}
+                  onPress={() => router.push(`/listing/${item._id}`)}
+                >
+                  <View style={[styles.imgWrap, { backgroundColor: colors.surface }]}>
+                    {item.photos?.[0] ? (
+                      <Image source={{ uri: resolveImage(item.photos[0]) }} style={styles.img} contentFit="cover" transition={120} />
+                    ) : (
+                      <View style={styles.imgFallback}>
+                        <Ionicons name="image-outline" size={ms(22)} color={colors.faint} />
                       </View>
                     )}
+                    {item.status === 'active' && <View style={[styles.activeDot, { backgroundColor: colors.success }]} />}
                   </View>
-                </View>
 
-                <Ionicons name="chevron-forward" size={ms(17)} color={colors.faint} />
-              </Pressable>
+                  <View style={styles.info}>
+                    <Text numberOfLines={2} style={[styles.title, { color: colors.text }]}>{item.title}</Text>
+                    <Text style={[styles.price, { color: colors.ink }]}>{formatPriceT(item.price.amount, item.price.currency, t)}</Text>
+                    <View style={styles.bottomRow}>
+                      <Badge label={t.statuses[item.status as keyof typeof t.statuses] || item.status} tone={tone} />
+                      {item.views != null && (
+                        <View style={styles.viewRow}>
+                          <Ionicons name="eye-outline" size={ms(12)} color={colors.faint} />
+                          <Text style={[styles.viewText, { color: colors.faint }]}>{item.views}</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+
+                  <Ionicons name="chevron-forward" size={ms(17)} color={colors.faint} />
+                </Pressable>
+
+                {/* Amal tugmalari */}
+                <View style={[styles.actions, { borderTopColor: colors.hairline }]}>
+                  {isSold ? (
+                    <ActionBtn icon="refresh-outline" label={t.myListings.republish} color={colors.success} onPress={() => republish(item._id)} colors={colors} />
+                  ) : (
+                    <ActionBtn icon="checkmark-circle-outline" label={t.myListings.markSold} color={colors.success} onPress={() => markSold(item._id)} colors={colors} />
+                  )}
+                  <View style={[styles.actionDivider, { backgroundColor: colors.hairline }]} />
+                  <ActionBtn icon="create-outline" label={t.myListings.edit} color={colors.info} onPress={() => router.push({ pathname: '/create-listing', params: { editId: item._id } })} colors={colors} />
+                  <View style={[styles.actionDivider, { backgroundColor: colors.hairline }]} />
+                  <ActionBtn icon="trash-outline" label={t.myListings.delete} color={colors.danger} onPress={() => remove(item._id)} colors={colors} />
+                </View>
+              </View>
             );
           }}
           contentContainerStyle={styles.list}
@@ -136,6 +193,17 @@ export default function MyListings() {
   );
 }
 
+function ActionBtn({ icon, label, color, onPress, colors }: {
+  icon: keyof typeof Ionicons.glyphMap; label: string; color: string; onPress: () => void; colors: ReturnType<typeof useColors>;
+}) {
+  return (
+    <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { backgroundColor: colors.surface }]} onPress={onPress}>
+      <Ionicons name={icon} size={ms(16)} color={color} />
+      <Text style={[styles.actionText, { color }]} numberOfLines={1}>{label}</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1 },
   header: { paddingHorizontal: s(16), paddingBottom: s(16), borderBottomLeftRadius: s(24), borderBottomRightRadius: s(24), ...theme.shadow.navy },
@@ -150,7 +218,12 @@ const styles = StyleSheet.create({
   statNum: { fontSize: ms(18), fontWeight: '900', color: '#fff' },
   statLabel: { fontSize: ms(11), color: 'rgba(255,255,255,0.65)', fontWeight: '500' },
   list: { padding: s(16), gap: s(10), flexGrow: 1 },
-  row: { flexDirection: 'row', alignItems: 'center', borderRadius: theme.radius.xl, borderWidth: 1, padding: s(12), gap: s(12), ...theme.shadow.sm },
+  card: { borderRadius: theme.radius.xl, borderWidth: 1, overflow: 'hidden', ...theme.shadow.sm },
+  row: { flexDirection: 'row', alignItems: 'center', padding: s(12), gap: s(12) },
+  actions: { flexDirection: 'row', alignItems: 'center', borderTopWidth: 1 },
+  actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: s(5), paddingVertical: s(11) },
+  actionText: { fontSize: ms(12.5), fontWeight: '700' },
+  actionDivider: { width: 1, height: s(20) },
   imgWrap: { width: s(72), height: s(72), borderRadius: theme.radius.lg, overflow: 'hidden' },
   img: { width: '100%', height: '100%' },
   imgFallback: { flex: 1, alignItems: 'center', justifyContent: 'center' },

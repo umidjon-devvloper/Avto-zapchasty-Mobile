@@ -10,7 +10,7 @@ export interface PartCategory {
   parentId: string | null;
   hidden?: boolean;
 }
-export interface PartType { _id: string; name: string; slug: string; categoryId: string; subcategory: string | null; synonyms: string[] }
+export interface PartType { _id: string; name: string; nameUz?: string; slug: string; categoryId: string; subcategory: string | null; synonyms: string[] }
 export interface Brand { _id: string; name: string; slug: string; country: string; popular: boolean }
 export interface CarModel { _id: string; brandId: string; name: string; slug: string }
 export interface City { _id: string; name: I18nName; slug: string; region: string }
@@ -26,6 +26,7 @@ export interface Listing {
   condition: Condition;
   manufacturer: string;
   price: { amount: number; currency: string };
+  negotiable?: boolean;
   photos: string[];
   city: string;
   delivery: boolean;
@@ -35,7 +36,7 @@ export interface Listing {
   views: number;
   favoritesCount: number;
   createdAt: string;
-  partTypeId?: { _id: string; name: string; slug: string };
+  partTypeId?: { _id: string; name: string; nameUz?: string; slug: string };
   categoryId?: { _id: string; name: I18nName; slug: string };
   sellerId?: { _id: string; name: string; phone: string; sellerProfile?: { shopName: string; city: string; avatar?: string } };
   fitment?: {
@@ -56,7 +57,7 @@ export interface User {
 }
 
 export interface Paginated<T> { items: T[]; total: number; page: number; pages: number }
-export interface Suggestion { _id: string; name: string; slug: string; categoryId: string }
+export interface Suggestion { _id: string; name: string; nameUz?: string; slug: string; categoryId: string }
 
 export interface SellerPublicProfile {
   _id: string;

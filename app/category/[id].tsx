@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../src/lib/api';
-import { useT, useLocalize } from '../../src/lib/i18n';
+import { useT, useLocalize, useLocalizePart } from '../../src/lib/i18n';
 import { useColors, useScheme } from '../../src/theme/useColors';
 import { theme, s, ms } from '../../src/theme';
 import { ListingCard } from '../../src/components/ListingCard';
@@ -128,6 +128,7 @@ function PartTypeList({ categoryId, categoryName, slug }: { categoryId: string; 
   const colors = useColors();
   const tones = useTones();
   const t = useT();
+  const lzp = useLocalizePart();
   const { data: partTypes, isLoading } = useQuery({
     queryKey: ['part-types', categoryId],
     queryFn: () => api.categoryPartTypes(categoryId),
@@ -156,14 +157,14 @@ function PartTypeList({ categoryId, categoryName, slug }: { categoryId: string; 
                   onPress={() =>
                     router.push({
                       pathname: '/category/[id]',
-                      params: { id: pt._id, name: pt.name, level: '3', partTypeId: pt._id },
+                      params: { id: pt._id, name: lzp(pt), level: '3', partTypeId: pt._id },
                     })
                   }
                 >
                   <LinearGradient colors={tone.grad} style={styles.ptIcon}>
                     <Ionicons name="build-outline" size={ms(17)} color={tone.icon} />
                   </LinearGradient>
-                  <Text style={[styles.ptName, { color: colors.text }]}>{pt.name}</Text>
+                  <Text style={[styles.ptName, { color: colors.text }]}>{lzp(pt)}</Text>
                   <Ionicons name="chevron-forward" size={ms(15)} color={colors.muted} />
                 </Pressable>
               );

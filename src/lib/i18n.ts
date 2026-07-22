@@ -280,6 +280,20 @@ const uz = {
     statSold: 'Sotilgan',
     empty: "Hali e'lon bermagansiz",
     createFirst: "Birinchi e'lonni berish",
+    markSold: 'Sotildi',
+    republish: 'Qayta sotish',
+    edit: 'Tahrirlash',
+    delete: "O'chirish",
+    cancel: 'Bekor',
+    soldConfirmTitle: 'Sotildi deb belgilash',
+    soldConfirmText: "E'lon \"sotilgan\" bo'ladi va qidiruvdan yashiriladi.",
+    soldBtn: 'Ha, sotildi',
+    deleteConfirmTitle: "E'lonni o'chirish",
+    deleteConfirmText: "E'lon butunlay o'chiriladi. Buni qaytarib bo'lmaydi.",
+    deleteBtn: "Ha, o'chirilsin",
+    editTitle: "E'lonni tahrirlash",
+    saveEdit: "O'zgarishlarni saqlash",
+    updated: "E'lon yangilandi",
   },
   category: {
     fallback: 'Kategoriya',
@@ -573,6 +587,20 @@ const ru: typeof uz = {
     statSold: 'Продано',
     empty: 'Вы ещё не разместили объявлений',
     createFirst: 'Разместить первое объявление',
+    markSold: 'Продано',
+    republish: 'Продать снова',
+    edit: 'Редактировать',
+    delete: 'Удалить',
+    cancel: 'Отмена',
+    soldConfirmTitle: 'Отметить как проданное',
+    soldConfirmText: 'Объявление станет "продано" и скроется из поиска.',
+    soldBtn: 'Да, продано',
+    deleteConfirmTitle: 'Удалить объявление',
+    deleteConfirmText: 'Объявление будет удалено навсегда. Отменить нельзя.',
+    deleteBtn: 'Да, удалить',
+    editTitle: 'Редактировать объявление',
+    saveEdit: 'Сохранить изменения',
+    updated: 'Объявление обновлено',
   },
   category: {
     fallback: 'Категория',
@@ -630,6 +658,17 @@ export function useLocalize() {
     if (typeof name === 'string') return name;
     if (locale === 'ru') return name.ru || name.uz || '';
     return name.uz || name.ru || '';
+  };
+}
+
+// Detal turi (partType) nomini lokalizatsiya qilish.
+// name — ruscha (asosiy), nameUz — o'zbekcha (bo'lmasa ruschaga qaytadi).
+export function useLocalizePart() {
+  const locale = useLocaleStore((st) => st.locale);
+  return (pt?: { name: string; nameUz?: string } | null): string => {
+    if (!pt) return '';
+    if (locale === 'uz') return pt.nameUz || pt.name;
+    return pt.name;
   };
 }
 
