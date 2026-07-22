@@ -2,9 +2,11 @@ import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { FlatList, View, Text, Pressable, StyleSheet, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { api } from '../../src/lib/api';
+import { resolveImage } from '../../src/lib/image';
 import { useT } from '../../src/lib/i18n';
 import { useColors } from '../../src/theme/useColors';
 import { theme, s, ms } from '../../src/theme';
@@ -63,7 +65,11 @@ export default function SellerProfile() {
           {!profileLoading && profile && (
             <View style={styles.profileRow}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{initial}</Text>
+                {profile?.sellerProfile?.avatar ? (
+                  <Image source={{ uri: resolveImage(profile.sellerProfile.avatar) }} style={styles.avatarImg} contentFit="cover" />
+                ) : (
+                  <Text style={styles.avatarText}>{initial}</Text>
+                )}
               </View>
               <View style={{ flex: 1 }}>
                 <View style={styles.nameRow}>
@@ -132,6 +138,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   avatarText: { fontSize: ms(22), fontWeight: '800', color: '#fff' },
+  avatarImg: { width: '100%', height: '100%', borderRadius: s(28) },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: s(6) },
   shopName: { fontSize: ms(17), fontWeight: '800', color: '#fff', flexShrink: 1 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: s(3), marginTop: s(2) },

@@ -12,6 +12,7 @@ import { useColors, useScheme } from '../../src/theme/useColors';
 import { theme, s, ms } from '../../src/theme';
 import { Wordmark, LogoMark } from '../../src/components/Brand';
 import { ListingCard } from '../../src/components/ListingCard';
+import { useLocationStore } from '../../src/lib/location';
 import { Loading } from '../../src/components/Loading';
 import { categoryIcon } from '../../src/lib/category-icons';
 import type { Brand, Listing, PartCategory } from '../../src/lib/types';
@@ -81,17 +82,26 @@ export default function Home() {
     queryFn: () => api.search({ sort: 'newest', limit: 10, page: 1 }),
   });
 
+  // Yaqin-atrofdagi e'lonlar — joylashuv ruxsati berilgan bo'lsa
+  const coords = useLocationStore((st) => st.coords);
+  const { data: nearby, refetch: refetchNearby } = useQuery({
+    queryKey: ['nearby-listings', coords?.lat, coords?.lng],
+    queryFn: () => api.nearby(coords!.lat, coords!.lng, 10),
+    enabled: !!coords,
+  });
+  const nearbyItems = nearby?.items ?? [];
+
   const latestItems = latest?.items ?? [];
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await Promise.all([refetchCategories(), refetchBrands(), refetchLatest()]);
+      await Promise.all([refetchCategories(), refetchBrands(), refetchLatest(), refetchNearby()]);
     } finally {
       setRefreshing(false);
     }
-  }, [refetchCategories, refetchBrands, refetchLatest]);
+  }, [refetchCategories, refetchBrands, refetchLatest, refetchNearby]);
 
   const scrolledPastHero = useRef(false);
 
@@ -195,6 +205,23 @@ export default function Home() {
             <CategoryRow categories={categories ?? []} />
           )}
         </View>
+
+        {nearbyItems.length > 0 && (
+          <View>
+            <SectionHeader
+              title={nearby?.tier === 'city' ? t.home.nearbyCity : t.home.nearby}
+              colors={colors}
+            />
+            <View style={styles.feed}>
+              {chunk<Listing>(nearbyItems, 2).map((row, i) => (
+                <View key={i} style={styles.feedRow}>
+                  {row.map((it) => <ListingCard key={it._id} listing={it} variant="grid" />)}
+                  {row.length < 2 && <View style={{ flex: 1 }} />}
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         <View>
           <SectionHeader

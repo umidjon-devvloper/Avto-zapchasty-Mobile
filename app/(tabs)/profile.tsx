@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert, ScrollView, StatusBar, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Image } from 'expo-image';
 import { setStatusBarStyle } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
@@ -15,6 +16,7 @@ import { theme, s, ms } from '../../src/theme';
 import { AuthPrompt } from '../../src/components/AuthPrompt';
 import { Wordmark } from '../../src/components/Brand';
 import { unregisterPush } from '../../src/lib/push';
+import { resolveImage } from '../../src/lib/image';
 import { disconnectSocket } from '../../src/lib/socket';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -92,11 +94,13 @@ export default function Profile() {
 
   const initial = (user.name || user.phone || '?').trim().charAt(0).toUpperCase();
   const verified = user.sellerProfile?.verified;
+  const avatar = user.sellerProfile?.avatar;
 
   const groups: { title: string; items: MenuItem[] }[] = [
     {
       title: t.profile.activity,
       items: [
+        { icon: 'person-circle', label: t.profile.editProfile, sub: t.profile.editProfileSub, tint: colors.primary, onPress: () => router.push('/edit-profile') },
         { icon: 'pricetags', label: t.profile.myListings, sub: t.profile.myListingsSub, tint: colors.ink, onPress: () => router.push('/my-listings') },
         { icon: 'add-circle', label: t.profile.newListing, sub: t.profile.newListingSub, tint: colors.primary, onPress: () => router.push('/create-listing') },
       ],
@@ -123,14 +127,18 @@ export default function Profile() {
           <SafeAreaView edges={['top']}>
             <Text style={styles.headerLabel}>{t.profile.title}</Text>
             <View style={styles.identity}>
-              <View style={styles.avatarWrap}>
-                <Text style={styles.avatarText}>{initial}</Text>
+              <Pressable style={styles.avatarWrap} onPress={() => router.push('/edit-profile')}>
+                {avatar ? (
+                  <Image source={{ uri: resolveImage(avatar) }} style={styles.avatarImg} contentFit="cover" />
+                ) : (
+                  <Text style={styles.avatarText}>{initial}</Text>
+                )}
                 {verified && (
                   <View style={[styles.verifiedRing, { backgroundColor: colors.card, borderColor: colors.brand }]}>
                     <Ionicons name="shield-checkmark" size={ms(13)} color={colors.success} />
                   </View>
                 )}
-              </View>
+              </Pressable>
               <View style={styles.identityInfo}>
                 <View style={styles.nameRow}>
                   <Text style={styles.name} numberOfLines={1}>{user.name || t.common.user}</Text>
@@ -269,7 +277,7 @@ export default function Profile() {
 
         <View style={styles.footer}>
           <Wordmark size={ms(16)} />
-          <Text style={[styles.version, { color: colors.faint }]}>v1.0.0 · {t.home.tagline}</Text>
+          <Text style={[styles.version, { color: colors.faint }]}>v1.1.0 · {t.home.tagline}</Text>
         </View>
       </ScrollView>
     </View>
@@ -288,6 +296,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   avatarText: { fontSize: ms(28), fontWeight: '900', color: '#fff' },
+  avatarImg: { width: '100%', height: '100%', borderRadius: s(22) },
   verifiedRing: {
     position: 'absolute', right: s(-4), bottom: s(-4),
     width: s(24), height: s(24), borderRadius: s(12),

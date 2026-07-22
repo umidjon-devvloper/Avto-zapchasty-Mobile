@@ -29,6 +29,7 @@ export interface Listing {
   photos: string[];
   city: string;
   delivery: boolean;
+  distanceKm?: number; // /search/nearby javobida keladi
   phone: string;
   status: ListingStatus;
   views: number;
@@ -36,7 +37,7 @@ export interface Listing {
   createdAt: string;
   partTypeId?: { _id: string; name: string; slug: string };
   categoryId?: { _id: string; name: I18nName; slug: string };
-  sellerId?: { _id: string; name: string; phone: string; sellerProfile?: { shopName: string; city: string } };
+  sellerId?: { _id: string; name: string; phone: string; sellerProfile?: { shopName: string; city: string; avatar?: string } };
   fitment?: {
     brandId?: { _id: string; name: string } | string;
     modelId?: { _id: string; name: string } | string;
@@ -51,7 +52,7 @@ export interface User {
   name: string;
   role: Role;
   blocked?: boolean;
-  sellerProfile?: { shopName: string; city: string; verified: boolean };
+  sellerProfile?: { shopName: string; city: string; verified: boolean; avatar?: string };
 }
 
 export interface Paginated<T> { items: T[]; total: number; page: number; pages: number }
@@ -62,7 +63,7 @@ export interface SellerPublicProfile {
   name: string;
   createdAt: string;
   activeListings: number;
-  sellerProfile?: { shopName: string; city: string; verified: boolean };
+  sellerProfile?: { shopName: string; city: string; verified: boolean; avatar?: string };
 }
 
 export interface ChatMessage {

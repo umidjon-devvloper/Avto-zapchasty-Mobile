@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, TextInput, FlatList, StyleSheet, Pressable, KeyboardAvoidingView, Platform, Linking, Alert } from 'react-native';
+import { View, Text, TextInput, FlatList, StyleSheet, Pressable, KeyboardAvoidingView, Linking, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { setStatusBarStyle } from 'expo-status-bar';
@@ -98,9 +98,11 @@ export default function ChatThread() {
   const presence = peer?.online ? t.chat.online : peer?.lastSeen ? t.chat.lastSeen(timeAgoT(peer.lastSeen, t)) : '';
 
   return (
+    // SDK 54: Android'da edge-to-edge majburiy, adjustResize ishlamaydi —
+    // shuning uchun "padding" ikkala platformada ham kerak
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.bg }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior="padding"
       keyboardVerticalOffset={0}
     >
       <LinearGradient colors={theme.gradients.brand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>

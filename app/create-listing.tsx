@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, TextInput,
-  StatusBar, Alert, Switch, ActivityIndicator,
+  StatusBar, Alert, Switch, ActivityIndicator, KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,6 +17,7 @@ import { useColors } from '../src/theme/useColors';
 import { theme, s, ms } from '../src/theme';
 import { Button } from '../src/components/Button';
 import { PickerSheet } from '../src/components/PickerSheet';
+import { useLocationStore, requestLocation } from '../src/lib/location';
 
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   const colors = useColors();
@@ -122,6 +123,8 @@ export default function CreateListing() {
     if (!canSubmit) return;
     setBusy(true);
     try {
+      // Joylashuv: store'da bo'lmasa, oxirgi imkoniyat sifatida so'rab ko'ramiz
+      const coords = useLocationStore.getState().coords ?? (await requestLocation());
       await api.createListing({
         partTypeId,
         title: title.trim(),
@@ -136,6 +139,7 @@ export default function CreateListing() {
         city,
         delivery,
         phone: phone.trim(),
+        ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
       });
       qc.invalidateQueries({ queryKey: ['my-listings'] });
       qc.invalidateQueries({ queryKey: ['listings'] });
@@ -165,6 +169,8 @@ export default function CreateListing() {
         </SafeAreaView>
       </LinearGradient>
 
+      {/* SDK 54: Android'da edge-to-edge majburiy, adjustResize ishlamaydi — klaviatura uchun "padding" */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       <ScrollView
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
@@ -400,6 +406,7 @@ export default function CreateListing() {
           </View>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
 
     </View>
   );

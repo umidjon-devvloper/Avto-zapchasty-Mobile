@@ -7,6 +7,7 @@ import { useColors } from '../theme/useColors';
 import { theme, s, ms } from '../theme';
 import { useT, formatPriceT, timeAgoShortT } from '../lib/i18n';
 import { resolveImage } from '../lib/image';
+import { formatDistance } from '../lib/location';
 import type { Listing } from '../lib/types';
 
 type Variant = 'row' | 'grid';
@@ -55,9 +56,9 @@ function GridCard({ listing }: { listing: Listing }) {
         <Text numberOfLines={2} style={[styles.gTitle, { color: colors.inkSoft }]}>{listing.title}</Text>
         <View style={styles.gFoot}>
           <View style={styles.gFootLeft}>
-            <Ionicons name="location-outline" size={ms(11)} color={colors.faint} />
-            <Text numberOfLines={1} style={[styles.gMeta, { color: colors.faint }]}>
-              {listing.city || "O'zbekiston"}
+            <Ionicons name="location-outline" size={ms(11)} color={listing.distanceKm != null ? colors.success : colors.faint} />
+            <Text numberOfLines={1} style={[styles.gMeta, { color: listing.distanceKm != null ? colors.success : colors.faint }]}>
+              {listing.distanceKm != null ? formatDistance(listing.distanceKm) : listing.city || "O'zbekiston"}
             </Text>
           </View>
           <Text style={[styles.gTime, { color: colors.faint }]}>{timeAgoShortT(listing.createdAt, t)}</Text>

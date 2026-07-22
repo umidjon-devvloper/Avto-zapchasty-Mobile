@@ -71,7 +71,7 @@ export const api = {
   login: (phone: string, password: string) =>
     http.post<{ user: User; accessToken: string; refreshToken: string }>('/auth/login', { phone, password }).then((r) => r.data),
   me: () => http.get<{ user: User }>('/auth/me').then((r) => r.data.user),
-  updateProfile: (body: { name?: string; shopName?: string; city?: string }) =>
+  updateProfile: (body: { name?: string; shopName?: string; city?: string; avatar?: string }) =>
     http.patch<{ user: User }>('/auth/me', body).then((r) => r.data.user),
   deleteAccount: () => http.delete('/auth/me').then((r) => r.data),
 
@@ -90,6 +90,10 @@ export const api = {
   // Qidiruv
   search: (params: Record<string, unknown>) =>
     http.get<Paginated<Listing>>('/search', { params }).then((r) => r.data),
+  nearby: (lat: number, lng: number, limit = 10) =>
+    http
+      .get<{ items: Listing[]; tier: 'near' | 'city' | 'none' }>('/search/nearby', { params: { lat, lng, limit } })
+      .then((r) => r.data),
   suggest: (q: string) =>
     http.get<{ items: Suggestion[] }>('/search/suggest', { params: { q } }).then((r) => r.data.items),
 

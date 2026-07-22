@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, StyleSheet, Alert, Pressable, KeyboardAvoidingView,
-  Platform, ScrollView, StatusBar, TextInput, type KeyboardTypeOptions,
+  ScrollView, StatusBar, TextInput, type KeyboardTypeOptions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -94,7 +94,8 @@ export default function Login() {
   return (
     <View style={[styles.root, { backgroundColor: colors.bg }]}>
       <StatusBar barStyle="light-content" backgroundColor={colors.brandDark} />
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* SDK 54: Android'da edge-to-edge majburiy, adjustResize ishlamaydi — "padding" ikkalasiga ham kerak */}
+      <KeyboardAvoidingView style={styles.flex} behavior="padding">
         <ScrollView
           contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + s(28) }]}
           keyboardShouldPersistTaps="handled"

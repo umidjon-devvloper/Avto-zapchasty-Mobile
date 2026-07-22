@@ -8,6 +8,7 @@ import { QueryProvider } from '../src/lib/query';
 import { api } from '../src/lib/api';
 import { useAuth, useAuthHydrated } from '../src/lib/auth';
 import { registerForPush } from '../src/lib/push';
+import { requestLocation } from '../src/lib/location';
 import { useNotificationStore } from '../src/lib/notificationStore';
 import { Loading } from '../src/components/Loading';
 import { BlockedScreen } from '../src/components/BlockedScreen';
@@ -22,6 +23,11 @@ export default function RootLayout() {
   const colors = useColors();
   const scheme = useScheme();
   const addNotification = useNotificationStore((s) => s.addNotification);
+
+  // Joylashuv — mehmonlar uchun ham, ilova ochilishi bilan
+  useEffect(() => {
+    requestLocation();
+  }, []);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -91,6 +97,7 @@ export default function RootLayout() {
           <Stack.Screen name="create-listing" options={{ headerShown: false }} />
           <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="my-listings" options={{ headerShown: false }} />
+          <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
           <Stack.Screen name="notifications" options={{ headerShown: false }} />
         </Stack>
       </QueryProvider>

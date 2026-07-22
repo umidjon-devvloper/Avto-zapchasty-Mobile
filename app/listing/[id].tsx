@@ -189,7 +189,11 @@ export default function ListingDetail() {
             onPress={() => { if (l.sellerId?._id) router.push(`/seller/${l.sellerId._id}`); }}
           >
             <View style={[styles.sellerAvatar, { backgroundColor: colors.brandSoft }]}>
-              <Ionicons name="storefront-outline" size={ms(22)} color={colors.ink} />
+              {l.sellerId?.sellerProfile?.avatar ? (
+                <Image source={{ uri: resolveImage(l.sellerId.sellerProfile.avatar) }} style={styles.sellerAvatarImg} contentFit="cover" />
+              ) : (
+                <Ionicons name="storefront-outline" size={ms(22)} color={colors.ink} />
+              )}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.sellerName, { color: colors.text }]} numberOfLines={1}>
@@ -334,7 +338,8 @@ const styles = StyleSheet.create({
   descCard: { marginTop: s(18) },
   desc: { fontSize: ms(15), lineHeight: ms(23), marginTop: s(8) },
   seller: { flexDirection: 'row', alignItems: 'center', gap: s(12), padding: s(14), borderRadius: theme.radius.lg, borderWidth: 1, ...theme.shadow.sm },
-  sellerAvatar: { width: s(48), height: s(48), borderRadius: s(24), alignItems: 'center', justifyContent: 'center' },
+  sellerAvatar: { width: s(48), height: s(48), borderRadius: s(24), alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  sellerAvatarImg: { width: '100%', height: '100%' },
   sellerName: { fontSize: ms(15.5), fontWeight: '800' },
   sellerPhone: { fontSize: ms(13), fontVariant: ['tabular-nums'], marginTop: s(2) },
   sellerLink: { fontSize: ms(12.5), fontWeight: '700', marginTop: s(4) },

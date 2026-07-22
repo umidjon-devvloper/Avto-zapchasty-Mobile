@@ -2,7 +2,7 @@
   "expo": {
     "name": "Zapchasty",
     "slug": "autoparts-mobile",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "scheme": "autoparts",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
@@ -58,6 +58,12 @@
         {
           "photosPermission": "Ilova rasm tanlash uchun galereyaga ruxsat so'raydi.",
           "cameraPermission": "E'lon uchun rasm olishga kamera ruxsati kerak."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Yaqin-atrofdagi ehtiyot qismlarni ko'rsatish va e'loningizga joylashuv biriktirish uchun ruxsat kerak."
         }
       ],
       "expo-font"
