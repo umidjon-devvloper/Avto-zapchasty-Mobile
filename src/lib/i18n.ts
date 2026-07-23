@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -271,6 +272,8 @@ const uz = {
     photoTooBig: 'Rasm hajmi 30 MB dan oshmasin',
     save: 'Saqlash',
     saved: 'Profil saqlandi',
+    location: 'Joylashuvingiz',
+    locationOff: "Joylashuv o'chirilgan",
   },
   myListings: {
     title: "Mening e'lonlarim",
@@ -578,6 +581,8 @@ const ru: typeof uz = {
     photoTooBig: 'Размер фото не должен превышать 30 МБ',
     save: 'Сохранить',
     saved: 'Профиль сохранён',
+    location: 'Ваше местоположение',
+    locationOff: 'Геолокация отключена',
   },
   myListings: {
     title: 'Мои объявления',
@@ -650,26 +655,27 @@ export function useLocale(): Locale {
   return useLocaleStore((st) => st.locale);
 }
 
-// Katalog I18nName (uz/ru) ni joriy tilga lokalizatsiya qiladi
+// Katalog I18nName (uz/ru) ni joriy tilga lokalizatsiya qiladi.
+// useCallback — locale o'zgarmaguncha barqaror referens (useMemo/useEffect deps buzilmasin)
 export function useLocalize() {
   const locale = useLocaleStore((st) => st.locale);
-  return (name?: I18nName | string): string => {
+  return useCallback((name?: I18nName | string): string => {
     if (!name) return '';
     if (typeof name === 'string') return name;
     if (locale === 'ru') return name.ru || name.uz || '';
     return name.uz || name.ru || '';
-  };
+  }, [locale]);
 }
 
 // Detal turi (partType) nomini lokalizatsiya qilish.
 // name — ruscha (asosiy), nameUz — o'zbekcha (bo'lmasa ruschaga qaytadi).
 export function useLocalizePart() {
   const locale = useLocaleStore((st) => st.locale);
-  return (pt?: { name: string; nameUz?: string } | null): string => {
+  return useCallback((pt?: { name: string; nameUz?: string } | null): string => {
     if (!pt) return '';
     if (locale === 'uz') return pt.nameUz || pt.name;
     return pt.name;
-  };
+  }, [locale]);
 }
 
 // Narx: 350 000 so'm / сум

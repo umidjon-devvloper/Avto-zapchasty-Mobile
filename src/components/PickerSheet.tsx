@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, View, Text, Pressable, FlatList, StyleSheet, TextInput } from 'react-native';
+import { Modal, View, Text, Pressable, FlatList, StyleSheet, TextInput, KeyboardAvoidingView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -59,6 +59,8 @@ export function PickerSheet({
       </Pressable>
 
       <Modal visible={open} animationType="slide" transparent onRequestClose={handleClose}>
+        {/* KeyboardAvoidingView — qidiruv inputi klaviatura ostida qolmasligi uchun (SDK 54) */}
+        <KeyboardAvoidingView style={styles.modalRoot} behavior="padding">
         <Pressable style={[styles.backdrop, { backgroundColor: colors.overlay }]} onPress={handleClose} />
 
         <View style={[styles.sheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + s(16) }]}>
@@ -130,6 +132,7 @@ export function PickerSheet({
             }
           />
         </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -145,6 +148,7 @@ const styles = StyleSheet.create({
   fieldDisabled: { opacity: 0.45 },
   value: { fontSize: ms(15.5), flex: 1, fontWeight: '500' },
 
+  modalRoot: { flex: 1 },
   backdrop: { flex: 1 },
 
   sheet: { maxHeight: '72%', borderTopLeftRadius: s(28), borderTopRightRadius: s(28), ...theme.shadow.lg },

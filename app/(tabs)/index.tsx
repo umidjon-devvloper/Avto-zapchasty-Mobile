@@ -97,11 +97,15 @@ export default function Home() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await Promise.all([refetchCategories(), refetchBrands(), refetchLatest(), refetchNearby()]);
+      // nearby faqat coords bor bo'lsa (aks holda queryFn coords!.lat da crash beradi)
+      await Promise.all([
+        refetchCategories(), refetchBrands(), refetchLatest(),
+        ...(coords ? [refetchNearby()] : []),
+      ]);
     } finally {
       setRefreshing(false);
     }
-  }, [refetchCategories, refetchBrands, refetchLatest, refetchNearby]);
+  }, [refetchCategories, refetchBrands, refetchLatest, refetchNearby, coords]);
 
   const scrolledPastHero = useRef(false);
 
@@ -148,7 +152,7 @@ export default function Home() {
               </View>
               <Pressable
                 style={({ pressed }) => [styles.notifBtn, pressed && { opacity: 0.8 }]}
-                onPress={() => router.push('/messages')}
+                onPress={() => router.push('/notifications')}
               >
                 <Ionicons name="notifications-outline" size={ms(20)} color="#fff" />
               </Pressable>

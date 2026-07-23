@@ -1,6 +1,6 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  View, Text, ScrollView, StyleSheet, useWindowDimensions, Linking, Pressable, Alert, Modal, TextInput,
+  View, Text, ScrollView, StyleSheet, useWindowDimensions, Linking, Pressable, Alert, Modal, TextInput, Share, KeyboardAvoidingView,
   type NativeSyntheticEvent, type NativeScrollEvent,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -17,6 +17,7 @@ import { theme, s, ms } from '../../src/theme';
 import { useT, formatPriceT, useLocalizePart } from '../../src/lib/i18n';
 import { formatDate } from '../../src/lib/format';
 import { resolveImage } from '../../src/lib/image';
+import { SITE_URL } from '../../src/config';
 import { Loading } from '../../src/components/Loading';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -49,7 +50,14 @@ export default function ListingDetail() {
   const [reportSending, setReportSending] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
 
-  const toggle = useMutation({ mutationFn: () => api.toggleFavorite(id), onSuccess: (r) => setFav(r.isFavorite) });
+  const qc = useQueryClient();
+  const toggle = useMutation({
+    mutationFn: () => api.toggleFavorite(id),
+    onSuccess: (r) => {
+      setFav(r.isFavorite);
+      qc.invalidateQueries({ queryKey: ['favorites'] });
+    },
+  });
 
   if (isLoading || !data) return <Loading />;
   const l = data.listing;
@@ -63,7 +71,7 @@ export default function ListingDetail() {
     typeof l.fitment?.modelId === 'object' ? l.fitment?.modelId?.name : undefined,
   ].filter(Boolean).join(' · ');
 
-  const onFavorite = () => { if (!token) { router.push('/auth/login'); return; } toggle.mutate(); };
+  const onFavorite = () => { if (!token) { router.push('/auth/login'); return; } if (toggle.isPending) return; toggle.mutate(); };
   const onCall = async () => {
     if (!phone) { Alert.alert(t.listing.noPhoneAlert); return; }
     const url = `tel:${phone}`;
@@ -89,6 +97,14 @@ export default function ListingDetail() {
   const onPhotoScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const i = Math.round(e.nativeEvent.contentOffset.x / width);
     if (i !== photoIdx) setPhotoIdx(i);
+  };
+  // E'lonni boshqa ilovalarga ulashish (Telegram, WhatsApp, ...)
+  const onShare = async () => {
+    try {
+      const url = `${SITE_URL}/listing/${l._id}`;
+      const price = formatPriceT(l.price.amount, l.price.currency, t);
+      await Share.share({ message: `${l.title}\n${price}\n${url}`, url });
+    } catch { /* foydalanuvchi bekor qildi */ }
   };
 
   return (
@@ -220,9 +236,14 @@ export default function ListingDetail() {
         <Pressable style={({ pressed }) => [styles.circleBtn, { backgroundColor: colors.card }, pressed && { backgroundColor: colors.surface, transform: [{ scale: 0.94 }] }]} onPress={() => router.back()} hitSlop={6}>
           <Ionicons name="chevron-back" size={ms(22)} color={colors.text} />
         </Pressable>
-        <Pressable style={({ pressed }) => [styles.circleBtn, { backgroundColor: colors.card }, pressed && { backgroundColor: colors.surface, transform: [{ scale: 0.94 }] }]} onPress={onFavorite} hitSlop={6}>
-          <Ionicons name={isFav ? 'heart' : 'heart-outline'} size={ms(21)} color={isFav ? colors.danger : colors.text} />
-        </Pressable>
+        <View style={styles.topBarRight}>
+          <Pressable style={({ pressed }) => [styles.circleBtn, { backgroundColor: colors.card }, pressed && { backgroundColor: colors.surface, transform: [{ scale: 0.94 }] }]} onPress={onShare} hitSlop={6}>
+            <Ionicons name="share-outline" size={ms(20)} color={colors.text} />
+          </Pressable>
+          <Pressable style={({ pressed }) => [styles.circleBtn, { backgroundColor: colors.card }, pressed && { backgroundColor: colors.surface, transform: [{ scale: 0.94 }] }]} onPress={onFavorite} hitSlop={6}>
+            <Ionicons name={isFav ? 'heart' : 'heart-outline'} size={ms(21)} color={isFav ? colors.danger : colors.text} />
+          </Pressable>
+        </View>
       </View>
 
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, s(12)) + s(8), borderTopColor: colors.border, backgroundColor: colors.card }]}>
@@ -274,6 +295,7 @@ export default function ListingDetail() {
       </Modal>
 
       <Modal visible={reportOpen} animationType="slide" transparent onRequestClose={() => setReportOpen(false)}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <Pressable style={[styles.reportBackdrop, { backgroundColor: colors.overlay }]} onPress={() => setReportOpen(false)} />
         <View style={[styles.reportSheet, { backgroundColor: colors.bg }]}>
           <View style={[styles.sheetHandle, { backgroundColor: colors.border }]} />
@@ -311,6 +333,7 @@ export default function ListingDetail() {
             <Text style={styles.reportSubmitText}>{t.listing.reportSend}</Text>
           </Pressable>
         </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -348,6 +371,7 @@ const styles = StyleSheet.create({
   dot: { width: s(6), height: s(6), borderRadius: s(3), backgroundColor: 'rgba(255,255,255,0.45)' },
   dotActive: { width: s(18), backgroundColor: '#fff' },
   topBar: { position: 'absolute', left: theme.space.lg, right: theme.space.lg, flexDirection: 'row', justifyContent: 'space-between' },
+  topBarRight: { flexDirection: 'row', gap: s(10) },
   circleBtn: { width: s(42), height: s(42), borderRadius: s(21), backgroundColor: 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center', ...theme.shadow.md },
   circlePressed: { backgroundColor: '#fff', transform: [{ scale: 0.94 }] },
   sheet: { marginTop: s(-22), borderTopLeftRadius: s(26), borderTopRightRadius: s(26), paddingHorizontal: theme.space.lg, paddingTop: s(20) },

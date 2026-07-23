@@ -18,6 +18,20 @@ export function getSocket(): Socket | null {
   return socket;
 }
 
+// Token yangilanganda chaqiriladi: socket handshake tokeni faqat ulanishda tekshiriladi,
+// shuning uchun yangi token bilan qayta ulanish kerak (aks holda realtime jimgina o'ladi).
+export function refreshSocketAuth() {
+  const token = useAuth.getState().accessToken;
+  if (!socket || !token) return;
+  socket.auth = { token };
+  if (socket.connected) {
+    socket.disconnect();
+    socket.connect();
+  } else {
+    socket.connect();
+  }
+}
+
 export function disconnectSocket() {
   if (socket) {
     socket.disconnect();

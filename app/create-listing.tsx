@@ -18,6 +18,7 @@ import { theme, s, ms } from '../src/theme';
 import { Button } from '../src/components/Button';
 import { PickerSheet } from '../src/components/PickerSheet';
 import { useLocationStore, requestLocation } from '../src/lib/location';
+import { resolveImage } from '../src/lib/image';
 
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   const colors = useColors();
@@ -176,7 +177,9 @@ export default function CreateListing() {
         await api.updateListing(editId!, body);
         qc.invalidateQueries({ queryKey: ['my-listings'] });
         qc.invalidateQueries({ queryKey: ['listing', editId] });
-        qc.invalidateQueries({ queryKey: ['listings'] });
+        qc.invalidateQueries({ queryKey: ['latest-listings'] });
+        qc.invalidateQueries({ queryKey: ['nearby-listings'] });
+        qc.invalidateQueries({ queryKey: ['search'] });
         Alert.alert(t.myListings.updated, undefined, [{ text: t.common.ok, onPress: () => router.back() }]);
       } else {
         // Joylashuv: store'da bo'lmasa, oxirgi imkoniyat sifatida so'rab ko'ramiz
@@ -184,7 +187,8 @@ export default function CreateListing() {
         if (coords) { body.lat = coords.lat; body.lng = coords.lng; }
         await api.createListing(body);
         qc.invalidateQueries({ queryKey: ['my-listings'] });
-        qc.invalidateQueries({ queryKey: ['listings'] });
+        qc.invalidateQueries({ queryKey: ['latest-listings'] });
+        qc.invalidateQueries({ queryKey: ['nearby-listings'] });
         Alert.alert(t.create.postedTitle, t.create.postedText, [
           { text: t.common.ok, onPress: () => router.back() },
         ]);
@@ -235,7 +239,7 @@ export default function CreateListing() {
             </Pressable>
             {photos.map((uri, i) => (
               <View key={uri + i} style={styles.photoThumb}>
-                <Image source={{ uri }} style={styles.photoImg} contentFit="cover" />
+                <Image source={{ uri: resolveImage(uri) }} style={styles.photoImg} contentFit="cover" />
                 {i === 0 && (
                   <View style={[styles.mainBadge, { backgroundColor: colors.primary }]}>
                     <Text style={styles.mainBadgeText}>{t.create.main}</Text>
@@ -255,7 +259,7 @@ export default function CreateListing() {
               label={t.create.category}
               placeholder={t.common.select}
               value={categoryId}
-              options={categories.map((c) => ({ value: c._id, label: lz(c.name) }))}
+              options={categories.map((c) => ({ value: c._id, label: lz(c.name) })).sort((a, b) => a.label.localeCompare(b.label))}
               onChange={(v) => { setCategoryId(v); setPartTypeId(''); }}
               loading={catLoading}
             />
@@ -346,7 +350,7 @@ export default function CreateListing() {
               label={t.create.brand}
               placeholder={t.common.select}
               value={brandId}
-              options={brands.map((b) => ({ value: b._id, label: b.name }))}
+              options={brands.map((b) => ({ value: b._id, label: b.name })).sort((a, b) => a.label.localeCompare(b.label))}
               onChange={(v) => { setBrandId(v); setModelId(''); }}
               loading={brandsLoading}
             />
@@ -363,7 +367,7 @@ export default function CreateListing() {
               label={t.create.city}
               placeholder={t.common.select}
               value={city}
-              options={cities.map((c) => ({ value: lz(c.name), label: lz(c.name) }))}
+              options={cities.map((c) => ({ value: c.name.uz ?? "", label: lz(c.name) })).sort((a, b) => a.label.localeCompare(b.label))}
               onChange={setCity}
             />
             <View>
@@ -428,11 +432,9 @@ export default function CreateListing() {
         <View style={styles.submitWrap}>
           {!canSubmit && (
             <Text style={[styles.hint, { color: colors.muted }]}>
-              {photos.length === 0
-                ? t.create.hintPhoto
-                : !partTypeId
-                  ? t.create.hintCategory
-                  : t.create.hintTitlePrice}
+              {!partTypeId
+                ? t.create.hintCategory
+                : t.create.hintTitlePrice}
             </Text>
           )}
           <View style={{ position: 'relative' }}>

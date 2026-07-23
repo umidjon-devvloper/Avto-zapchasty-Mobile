@@ -18,7 +18,7 @@ function NotifIcon({ data }: { data?: Record<string, unknown> }) {
     type === 'listing_approved' ? 'checkmark-circle' :
     type === 'listing_rejected' ? 'close-circle' :
     type === 'broadcast' ? 'megaphone' :
-    type === 'new_message' ? 'chatbubble' :
+    (type === 'new_message' || type === 'message') ? 'chatbubble' :
     'notifications';
   const color =
     type === 'listing_approved' ? colors.success :
@@ -49,8 +49,10 @@ export default function NotificationsScreen() {
 
   const handlePress = (n: AppNotification) => {
     markRead(n.id);
+    const conversationId = n.data?.conversationId as string | undefined;
     const listingId = n.data?.listingId as string | undefined;
-    if (listingId) router.push(`/listing/${listingId}`);
+    if (conversationId) router.push(`/chat/${conversationId}`);
+    else if (listingId) router.push(`/listing/${listingId}`);
   };
 
   return (

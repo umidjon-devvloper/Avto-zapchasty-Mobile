@@ -28,6 +28,9 @@ export default function MyListings() {
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['my-listings'] });
     qc.invalidateQueries({ queryKey: ['latest-listings'] });
+    qc.invalidateQueries({ queryKey: ['nearby-listings'] });
+    qc.invalidateQueries({ queryKey: ['search'] });
+    qc.invalidateQueries({ queryKey: ['listing'] });
   };
 
   // "Sotildi" deb belgilash

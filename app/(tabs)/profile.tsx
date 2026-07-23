@@ -277,7 +277,7 @@ export default function Profile() {
 
         <View style={styles.footer}>
           <Wordmark size={ms(16)} />
-          <Text style={[styles.version, { color: colors.faint }]}>v1.1.0 · {t.home.tagline}</Text>
+          <Text style={[styles.version, { color: colors.faint }]}>v1.2.0 · {t.home.tagline}</Text>
         </View>
       </ScrollView>
     </View>

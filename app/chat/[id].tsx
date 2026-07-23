@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, FlatList, StyleSheet, Pressable, KeyboardAvoidingView, Linking, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -72,17 +72,24 @@ export default function ChatThread() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  const sendingRef = useRef(false);
   const send = async () => {
     const body = text.trim();
-    if (!body || sending) return;
+    if (!body || sendingRef.current) return; // ref — tez ikki bosishда double-send'ni to'xtatadi
+    sendingRef.current = true;
     setText('');
     setSending(true);
     try {
       const msg = await api.sendChatMessage(id, body);
       appendMessage(msg);
       qc.invalidateQueries({ queryKey: ['conversations'] });
-    } catch { setText(body); }
-    finally { setSending(false); }
+    } catch {
+      // Xato bo'lsa matnni qaytaramiz — lekin foydalanuvchi yangi yozgan bo'lsa ustidan yozmaymiz
+      setText((cur) => cur || body);
+    } finally {
+      sendingRef.current = false;
+      setSending(false);
+    }
   };
 
   const onCall = async () => {

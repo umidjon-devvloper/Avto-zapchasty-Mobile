@@ -21,9 +21,15 @@ async function doRefresh(): Promise<string | null> {
   try {
     const { data } = await axios.post(`${API_URL}/auth/refresh`, { refreshToken: rt });
     useAuth.getState().setTokens(data.accessToken, data.refreshToken);
+    // Socket'ni yangi token bilan qayta ulaymiz (aks holda eski token bilan handshake qilib uziladi)
+    const { refreshSocketAuth } = require('./socket');
+    refreshSocketAuth();
     return data.accessToken as string;
   } catch {
+    // Refresh muvaffaqiyatsiz -> logout + socketni uzamiz (eski sessiya ochiq qolmasin)
     useAuth.getState().logout();
+    const { disconnectSocket } = require('./socket');
+    disconnectSocket();
     return null;
   }
 }
@@ -33,11 +39,12 @@ http.interceptors.response.use(
   async (error: AxiosError) => {
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-    // 403 = admin tomonidan bloklangan
+    // 403 = ruxsat yo'q. FAQAT hisob bloklangani haqidagi 403 butun ilovani bloklaydi;
+    // boshqa 403'lar (begona e'lonni tahrirlash/o'chirish va h.k.) oddiy xato sifatida qaytadi.
     if (error.response?.status === 403) {
       const msg = (error.response?.data as { error?: string; message?: string })?.error
         ?? (error.response?.data as { message?: string })?.message ?? '';
-      if (/block|ban|restrict/i.test(msg) || error.response?.status === 403) {
+      if (/blok|block|заблок/i.test(msg)) {
         useAuth.getState().setBlocked(true);
       }
       return Promise.reject(error);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, TextInput,
   Alert, ActivityIndicator, KeyboardAvoidingView,
@@ -18,6 +18,8 @@ import { theme, s, ms } from '../src/theme';
 import { Button } from '../src/components/Button';
 import { PickerSheet } from '../src/components/PickerSheet';
 import { resolveImage } from '../src/lib/image';
+import { useLocationStore, matchCity, requestLocation, resolveCityName } from '../src/lib/location';
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 
 const MAX_SIZE = 30 * 1024 * 1024; // 30MB
 
@@ -36,6 +38,27 @@ export default function EditProfile() {
   const [busy, setBusy] = useState(false);
 
   const { data: cities = [] } = useQuery({ queryKey: ['cities'], queryFn: api.cities });
+  const cityName = useLocationStore((st) => st.cityName);
+  const coords = useLocationStore((st) => st.coords);
+
+  // Joylashuv hali yo'q bo'lsa so'raymiz; coords bor lekin shahar aniqlanmagan bo'lsa qayta urinamiz
+  useEffect(() => {
+    if (!coords) { requestLocation(); return; }
+    if (!cityName) resolveCityName(coords);
+  }, [coords, cityName]);
+
+  // Shahar ro'yxati alfavit bo'yicha; value = uz nomi (til almashsa ham barqaror)
+  const cityOptions = useMemo(
+    () => cities.map((c) => ({ value: c.name.uz ?? "", label: lz(c.name) })).sort((a, b) => a.label.localeCompare(b.label)),
+    [cities, lz]
+  );
+
+  // Shahar tanlanmagan bo'lsa, joylashuvdan aniqlangan shaharni avtomatik qo'yamiz
+  useEffect(() => {
+    if (city || !cityName || !cityOptions.length) return;
+    const match = matchCity(cityName, cityOptions);
+    if (match) setCity(match);
+  }, [cityName, cityOptions, city]);
 
   const pickPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -171,9 +194,34 @@ export default function EditProfile() {
             label={t.profile.editCity}
             placeholder={t.common.select}
             value={city}
-            options={cities.map((c) => ({ value: lz(c.name), label: lz(c.name) }))}
+            options={cityOptions}
             onChange={setCity}
           />
+        </View>
+
+        {/* Joylashuv xaritada */}
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.mapHead}>
+            <Ionicons name="location" size={ms(16)} color={colors.primary} />
+            <Text style={[styles.cardTitle, { color: colors.ink }]}>{t.profile.location}</Text>
+          </View>
+          {coords ? (
+            <View style={styles.mapWrap}>
+              <MapView
+                provider={PROVIDER_DEFAULT}
+                style={styles.map}
+                region={{ latitude: coords.lat, longitude: coords.lng, latitudeDelta: 0.02, longitudeDelta: 0.02 }}
+                pointerEvents="none"
+              >
+                <Marker coordinate={{ latitude: coords.lat, longitude: coords.lng }} />
+              </MapView>
+            </View>
+          ) : (
+            <View style={[styles.mapEmpty, { backgroundColor: colors.surface }]}>
+              <Ionicons name="location-outline" size={ms(28)} color={colors.faint} />
+              <Text style={[styles.mapEmptyText, { color: colors.muted }]}>{t.profile.locationOff}</Text>
+            </View>
+          )}
         </View>
 
         <View style={{ position: 'relative' }}>
@@ -199,6 +247,11 @@ const styles = StyleSheet.create({
   scroll: { padding: s(16), gap: s(12), paddingBottom: s(40) },
   card: { borderRadius: theme.radius.xl, padding: s(16), borderWidth: 1, gap: s(14), ...theme.shadow.sm },
   cardTitle: { fontSize: ms(13), fontWeight: '800', letterSpacing: 0.4, textTransform: 'uppercase' },
+  mapHead: { flexDirection: 'row', alignItems: 'center', gap: s(6) },
+  mapWrap: { height: s(170), borderRadius: theme.radius.lg, overflow: 'hidden' },
+  map: { flex: 1 },
+  mapEmpty: { height: s(120), borderRadius: theme.radius.lg, alignItems: 'center', justifyContent: 'center', gap: s(6) },
+  mapEmptyText: { fontSize: ms(12.5), fontWeight: '600' },
 
   photoRow: { flexDirection: 'row', alignItems: 'center', gap: s(16) },
   avatarBox: {

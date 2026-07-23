@@ -2,7 +2,7 @@
   "expo": {
     "name": "Zapchasty",
     "slug": "autoparts-mobile",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "scheme": "autoparts",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",

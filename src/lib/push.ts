@@ -15,7 +15,6 @@ Notifications.setNotificationHandler({
 });
 
 let _registering = false;
-let _lastSentToken: string | null = null;
 
 export async function registerForPush(): Promise<string | null> {
   if (!Device.isDevice) return null;
@@ -56,7 +55,6 @@ export async function registerForPush(): Promise<string | null> {
     // (Avval faqat bir marta yuborilar, mehmon holatidagi token userga bog'lanmay qolardi.)
     try {
       await api.registerPushToken(token);
-      _lastSentToken = token;
       console.log('[push] Token serverga yuborildi ✓');
     } catch (apiErr) {
       console.log('[push] Token serverga yuborishda xato:', apiErr);
@@ -76,6 +74,5 @@ export async function unregisterPush(): Promise<void> {
     try { await api.removePushToken(token); } catch { /* ignore */ }
   }
   useAuth.getState().setPushToken(null);
-  _lastSentToken = null;
   _registering = false;
 }

@@ -14,6 +14,13 @@ import { Loading } from '../src/components/Loading';
 import { BlockedScreen } from '../src/components/BlockedScreen';
 import { useColors, useScheme } from '../src/theme/useColors';
 
+// Bildirishnoma data'siga qarab tegishli ekranga o'tish (xabar -> chat, e'lon -> listing)
+function navigateFromData(d: Record<string, unknown> | undefined) {
+  if (!d) return;
+  if (d.conversationId) router.push(`/chat/${d.conversationId}`);
+  else if (d.listingId) router.push(`/listing/${d.listingId}`);
+}
+
 export default function RootLayout() {
   const hydrated = useAuthHydrated();
   const accessToken = useAuth((s) => s.accessToken);
@@ -53,14 +60,14 @@ export default function RootLayout() {
       }
     });
 
-    // Notification bosilganda sahifaga o'tish
+    // Notification bosilganda: ro'yxatga qo'shish (dedup store'da) + tegishli ekranga o'tish
     const tapSub = Notifications.addNotificationResponseReceivedListener((resp) => {
       const { title, body, data } = resp.notification.request.content;
       const d = (data ?? {}) as Record<string, unknown>;
       if (title || body) {
         addNotification({ title: title ?? '', body: body ?? '', data: d });
       }
-      if (d?.listingId) router.push(`/listing/${d.listingId}`);
+      navigateFromData(d);
     });
 
     return () => {
@@ -68,6 +75,19 @@ export default function RootLayout() {
       tapSub.remove();
     };
   }, []);
+
+  // Ilova push bosish orqali "sovuq" holatdan ochilsa (cold-start) — hydrate tugagach navigatsiya
+  useEffect(() => {
+    if (!hydrated) return;
+    let done = false;
+    Notifications.getLastNotificationResponseAsync().then((resp) => {
+      if (done || !resp) return;
+      done = true;
+      const d = (resp.notification.request.content.data ?? {}) as Record<string, unknown>;
+      navigateFromData(d);
+    });
+    return () => { done = true; };
+  }, [hydrated]);
 
   if (!hydrated) {
     return (

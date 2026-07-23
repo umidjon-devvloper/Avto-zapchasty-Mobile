@@ -112,7 +112,7 @@ export default function TabsLayout() {
           title: t.tabs.messages,
           tabBarBadge: unread > 0 ? unread : undefined,
           tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon base="chatbubbles" color={color} size={size} focused={focused} badge={unread} />
+            <TabIcon base="chatbubbles" color={color} size={size} focused={focused} />
           ),
         }}
       />

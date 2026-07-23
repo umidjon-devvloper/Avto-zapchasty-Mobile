@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import {
-  View, TextInput, FlatList, StyleSheet, Text, Pressable, ScrollView, StatusBar,
+  View, TextInput, FlatList, StyleSheet, Text, Pressable, ScrollView, StatusBar, KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -251,6 +251,7 @@ export default function Search() {
           <Pressable style={[styles.filterBackdrop, { backgroundColor: colors.overlay }]} onPress={() => setFiltersOpen(false)} />
           <View style={[styles.filterPanel, { backgroundColor: colors.bg }]}>
             <SafeAreaView edges={['bottom']} style={{ flex: 1 }}>
+              <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
               <View style={[styles.filterHeader, { borderBottomColor: colors.border }]}>
                 <Text style={[styles.filterTitle, { color: colors.text }]}>{t.search.filters}</Text>
                 <View style={styles.filterHeaderRight}>
@@ -270,14 +271,14 @@ export default function Search() {
                   label={t.search.category}
                   placeholder={t.common.all}
                   value={categoryId}
-                  options={[ALL, ...categories.map((c) => ({ value: c._id, label: lz(c.name) }))]}
+                  options={[ALL, ...categories.map((c) => ({ value: c._id, label: lz(c.name) })).sort((a, b) => a.label.localeCompare(b.label))]}
                   onChange={setCategoryId}
                 />
                 <PickerSheet
                   label={t.search.brand}
                   placeholder={t.common.all}
                   value={brandId}
-                  options={[ALL, ...brands.map((b) => ({ value: b._id, label: b.name }))]}
+                  options={[ALL, ...brands.map((b) => ({ value: b._id, label: b.name })).sort((a, b) => a.label.localeCompare(b.label))]}
                   onChange={(v) => { setBrandId(v); setModelId(''); }}
                 />
                 {!!brandId && (
@@ -300,7 +301,7 @@ export default function Search() {
                   label={t.search.city}
                   placeholder={t.common.all}
                   value={city}
-                  options={[ALL, ...cities.map((c) => ({ value: lz(c.name), label: lz(c.name) }))]}
+                  options={[ALL, ...cities.map((c) => ({ value: c.name.uz ?? "", label: lz(c.name) })).sort((a, b) => a.label.localeCompare(b.label))]}
                   onChange={setCity}
                 />
 
@@ -334,6 +335,7 @@ export default function Search() {
                   onPress={() => setFiltersOpen(false)}
                 />
               </View>
+              </KeyboardAvoidingView>
             </SafeAreaView>
           </View>
         </View>
